@@ -1,0 +1,63 @@
+# CI de cada pull request (spec §7, CA-30).
+# Si algo falla aquí, el PR no se fusiona y no se despliega.
+# deploy.yml lo reutiliza (workflow_call) antes de desplegar lo que llega a main.
+name: ci
+
+on:
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  comprobaciones:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # para leer las etiquetas de versión y la rama destino
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Política de versiones
+        if: github.event_name == 'pull_request'
+        run: npm run version:check
+        env:
+          BASE_REF: ${{ github.base_ref }}
+
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:unit
+
+      - name: Arrancar Supabase local
+        run: npx supabase start -x studio,imgproxy,vector,logflare,postgres-meta
+
+      - name: Aplicar migraciones y datos de prueba
+        run: npx supabase db reset
+
+      - name: Variables de entorno locales
+        run: npm run supabase:env
+
+      - run: npm run test:integration
+
+      - name: Navegador para pruebas e2e
+        run: npx playwright install --with-deps chromium
+
+      - run: npm run build
+
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: informe-playwright
+          path: playwright-report/
+          retention-days: 7

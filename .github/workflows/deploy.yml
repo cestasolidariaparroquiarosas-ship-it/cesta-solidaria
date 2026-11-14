@@ -1,0 +1,166 @@
+# Despliegue automático (spec §7).
+#   push a main  → validar → CI → pruebas (migraciones + vista previa + humo) → producción → etiqueta y release
+#   manual (tag) → vuelve a publicar una versión etiquetada sin tocar migraciones (CA-33)
+# Si el humo en pruebas falla, producción no se toca (CA-31).
+#
+# Nota sobre concurrencia: si se fusionan varios PR muy seguidos, GitHub cancela los
+# despliegues que estaban esperando y solo ejecuta el más reciente. No se pierde código
+# (main es acumulativo), pero las versiones intermedias se quedan sin etiqueta.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      etiqueta:
+        description: "Versión publicada a la que volver (p. ej. v0.3.0)"
+        required: true
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  REF: ${{ github.event_name == 'workflow_dispatch' && inputs.etiqueta || github.sha }}
+  ES_REPUBLICACION: ${{ github.event_name == 'workflow_dispatch' }}
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configuración mínima
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "::error::Falta la variable de repositorio APP_URL (ver docs/operacion.md)"; exit 1
+          fi
+      - name: Solo se republican etiquetas de versión (CA-33)
+        if: env.ES_REPUBLICACION == 'true'
+        run: |
+          if ! [[ "$REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$REF' no es una etiqueta de versión (vX.Y.Z)"; exit 1
+          fi
+          if ! git rev-parse -q --verify "refs/tags/$REF" >/dev/null; then
+            echo "::error::La etiqueta $REF no existe"; exit 1
+          fi
+
+  ci:
+    needs: validar
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/ci.yml
+
+  pruebas:
+    needs: [validar, ci]
+    # 'ci' se salta en las republicaciones; por eso se comprueba el resultado a mano.
+    if: >-
+      ${{ !failure() && !cancelled() && needs.validar.result == 'success' &&
+      (needs.ci.result == 'success' || needs.ci.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REF }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Variables del entorno de pruebas
+        run: npx vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Registro público cerrado en pruebas (CA-25)
+        run: node scripts/comprobar-registro-cerrado.mjs .vercel/.env.preview.local
+
+      - name: Migraciones en pruebas
+        if: env.ES_REPUBLICACION != 'true'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: npx supabase db push --yes --remote="$DB_URL"
+
+      - name: Desplegar vista previa (conectada a pruebas)
+        id: desplegar
+        run: |
+          npx vercel build --token="$VERCEL_TOKEN"
+          url=$(npx vercel deploy --prebuilt --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - run: npx playwright install --with-deps chromium
+      - name: Humo en pruebas
+        run: npm run test:humo -- --project=escritorio
+        env:
+          BASE_URL: ${{ steps.desplegar.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+  produccion:
+    needs: pruebas
+    # Explícito: sin esto, que 'ci' se salte en las republicaciones también saltaría este job.
+    if: ${{ !failure() && !cancelled() && needs.pruebas.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REF }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Variables de producción
+        run: npx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Registro público cerrado en producción (CA-25)
+        run: node scripts/comprobar-registro-cerrado.mjs .vercel/.env.production.local
+
+      - name: Migraciones en producción
+        if: env.ES_REPUBLICACION != 'true'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+        run: npx supabase db push --yes --remote="$DB_URL"
+
+      - name: Desplegar producción
+        run: |
+          npx vercel build --prod --token="$VERCEL_TOKEN"
+          npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - run: npx playwright install --with-deps chromium
+      - name: Humo en producción
+        run: npm run test:humo -- --project=escritorio
+        env:
+          BASE_URL: ${{ vars.APP_URL }}
+
+  version:
+    needs: produccion
+    if: ${{ github.event_name == 'push' && needs.produccion.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Etiqueta y GitHub Release (CA-32)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "::error::La etiqueta v$version ya existe: lo publicado no tendría etiqueta propia. Revisa la versión en package.json."
+            exit 1
+          fi
+          node scripts/comprobar-version.mjs --solo-changelog > notas.md
+          git tag "v$version" "$GITHUB_SHA"
+          git push origin "v$version"
+          gh release create "v$version" --title "v$version" --notes-file notas.md
