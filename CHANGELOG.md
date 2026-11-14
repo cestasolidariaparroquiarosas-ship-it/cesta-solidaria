@@ -3,6 +3,15 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [0.3.1] - 2026-11-14
+
+Origen: puesta en marcha (spec §7) y revisión de seguridad antes de cargar datos reales.
+
+### Cambiado
+- `vercel.json`: framework Next.js y funciones en Fráncfort (`fra1`), junto a la base de datos. Antes se ejecutaban en Washington (`iad1`).
+- La copia de seguridad diaria se desactiva hasta trasladarla a un repositorio privado: el repositorio ahora es público y sus artefactos de Actions se pueden descargar.
+- `docs/operacion.md`: estado real de la puesta en marcha, tipo de las variables de Vercel, verificación en dos pasos y consejos.
+
 ## [0.3.0] - 2026-11-14
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 2.

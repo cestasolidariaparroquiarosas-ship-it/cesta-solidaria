@@ -9,7 +9,7 @@
    - Crear dos proyectos en región UE: `cesta-produccion` y `cesta-pruebas`.
    - En cada uno, en Authentication → Sign In / Providers, desactivar "Allow new users to sign up" (CA-25).
 3. **Vercel** (con la cuenta de Gmail):
-   - Crear un proyecto vacío, sin enlazarlo a GitHub.
+   - Crear un proyecto vacío, sin enlazarlo a GitHub. El framework (Next.js) y la región de las funciones (Fráncfort, `fra1`, junto a la base de datos) los fija `vercel.json`.
    - En Settings → Deployment Protection: desactivar la protección de las vistas previas o crear un "Protection Bypass for Automation" y guardarlo como `VERCEL_AUTOMATION_BYPASS_SECRET`.
    - Crear un token en Account Settings → Tokens.
 4. **Variables de entorno en Vercel:**
@@ -24,6 +24,9 @@
    | `APP_URL` | URL de producción | URL de la vista previa |
    | `ADMIN_EMAIL` | correo del administrador | igual |
    | `CRON_SECRET` | cadena aleatoria larga | otra distinta |
+
+   - Las dos `NEXT_PUBLIC_*` deben ser de tipo **Config**, no "Secret": la app las lee al construirse, y una variable "Secret" llega vacía. Son públicas por diseño (la RLS es la que protege los datos).
+   - Las demás, de tipo **Secret**. Se añaden cuando las usa el código: `SUPABASE_SECRET_KEY` y el correo en el PR 6, `CRON_SECRET` en el PR 7.
 
 5. **GitHub → Settings → Secrets and variables → Actions:**
    - Secretos:
@@ -44,7 +47,27 @@
       ```
 
    El rol vive en `app_metadata`, que el usuario no puede modificar. Para quitar el acceso, se borra la clave `rol` o el usuario.
-8. **Avisos de fallos:** en GitHub → Settings → Notifications, activar los avisos de "Actions" por correo. Así te enterarás si falla un despliegue o la copia diaria.
+8. **Verificación en dos pasos** en la cuenta de Google de la cesta y en GitHub. Con la cuenta de Google se entra en GitHub, y con GitHub en Supabase y Vercel: es la llave de todo.
+9. **Avisos de fallos:** en GitHub → Settings → Notifications, activar los avisos de "Actions" por correo. Así te enterarás si falla un despliegue o la copia diaria.
+
+### Consejos de la puesta en marcha
+
+- En el navegador integrado de Claude, los botones de "copiar" de Supabase y Vercel no llegan al portapapeles. Copia con el teclado (clic en el valor, Ctrl+A, Ctrl+C).
+- Si el despliegue falla en "Migraciones" con `password authentication failed`, la contraseña de la cadena `SUPABASE_*_DB_URL` no es la buena: se cambia en Supabase → Database → Settings → "Reset password" y se actualiza el secreto.
+- Si al pulsar "Entrar" justo después de un despliegue no pasa nada, recarga la página: la pantalla era de la versión anterior.
+
+### Estado actual (2026-11-14)
+
+| Pieza | Valor |
+|---|---|
+| Supabase | `cesta-produccion` y `cesta-pruebas`, Central EU (Frankfurt), registro público desactivado |
+| Vercel | proyecto `cesta-solidaria`, equipo `cesta`, producción en https://cesta-solidaria-rosas.vercel.app |
+| GitHub | repositorio **público** (decisión del responsable, 2026-11-14): con GitHub gratuito, un repositorio privado no permite proteger `main` (CA-30). En el repositorio no hay datos ni claves. `main` protegida: PR obligatorio y check `comprobaciones`, también para administradores |
+| Copias | **desactivadas** hasta trasladarlas a un repositorio privado (ver abajo) |
+
+## Copias de seguridad
+
+Pendiente: los artefactos de Actions de un repositorio público los puede descargar cualquiera, así que la copia diaria no puede vivir aquí aunque vaya cifrada. Plan: un repositorio **privado** `cesta-copias` con el mismo `backup.yml` y sus propios secretos (`SUPABASE_PROD_DB_URL`, `SUPABASE_STAGING_DB_URL`, `BACKUP_PASSPHRASE`). Mientras tanto, `backup.yml` aquí solo se ejecuta a mano y no debe usarse.
 
 ## Volver a una versión anterior
 

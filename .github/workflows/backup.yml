@@ -6,8 +6,12 @@
 name: backup
 
 on:
-  schedule:
-    - cron: "17 3 * * *" # 03:17 UTC, de madrugada en España
+  # Desactivada (v0.3.1): el repositorio es público y los artefactos de Actions de un
+  # repositorio público los puede descargar cualquier usuario de GitHub. La copia va
+  # cifrada, pero no se publica ni cifrada. Se trasladará a un repositorio privado
+  # (docs/operacion.md, "Copias de seguridad"). Hasta entonces, solo a mano.
+  # schedule:
+  #   - cron: "17 3 * * *" # 03:17 UTC, de madrugada en España
   workflow_dispatch:
 
 concurrency:
