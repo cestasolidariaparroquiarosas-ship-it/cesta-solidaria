@@ -194,12 +194,13 @@ Todas las tablas tienen `id` (uuid), `creado_en` y `actualizado_en`.
    2. Ejecuta las pruebas de humo de Playwright contra esa vista previa. **Si fallan, se detiene** y no toca producción (CA-31).
    3. Aplica las migraciones en **producción** y despliega en Vercel producción.
    4. Ejecuta una prueba de humo contra producción.
-   5. Calcula la versión, crea la etiqueta `vX.Y.Z` y la GitHub Release y actualiza `CHANGELOG.md` (CA-32).
+   5. Crea la etiqueta `vX.Y.Z` con la versión de `package.json` y la GitHub Release con las notas de `CHANGELOG.md` (CA-32).
 6. Vercel no está enlazado directamente a GitHub: solo se despliega desde Actions con la CLI. Así un despliegue nunca se salta las pruebas.
 
 ### Política de versiones
 
-- **Numeración (SemVer):** `MAJOR.MINOR.PATCH`. PATCH para correcciones, MINOR para funcionalidad nueva (normalmente, un intent nuevo), MAJOR para cambios incompatibles en los datos. La versión sale de los mensajes de commit (Conventional Commits: `fix:`, `feat:`, `feat!:`).
+- **Numeración (SemVer):** `MAJOR.MINOR.PATCH`. PATCH para correcciones, MINOR para funcionalidad nueva (normalmente, un intent nuevo), MAJOR para cambios incompatibles en los datos.
+- **Cada PR sube la versión** en `package.json` y añade su sección en `CHANGELOG.md`. CI comprueba que la versión es nueva y mayor que la última publicada (`npm run version:check`). Así no hace falta que ningún robot escriba en `main`.
 - **Trazabilidad:** cada versión enlaza al intent, spec y plan que la originaron, que están en `docs/sdlc/`.
 - **Migraciones solo hacia delante y compatibles con la versión anterior** (expandir y luego contraer): una columna se añade en una versión y la antigua se elimina en una posterior. Así el código de la versión N−1 sigue funcionando con la base de datos de la versión N.
 
@@ -227,10 +228,11 @@ Esto no lo puede hacer Claude solo, porque son tus cuentas. Puedo guiarte paso a
 2. **GitHub:** crear un repositorio privado `cesta-solidaria`, vacío, y darle acceso a esta sesión.
 3. **Supabase:** con la cuenta de Gmail, crear dos proyectos en región UE: `cesta-produccion` y `cesta-pruebas`.
 4. **Vercel:** con la cuenta de Gmail, crear un proyecto vacío y un token de acceso.
-5. **Secretos de GitHub:**
+5. **Secretos y variables de GitHub:**
    - Vercel: `VERCEL_TOKEN`, `VERCEL_ORG_ID` y `VERCEL_PROJECT_ID`.
-   - Supabase: `SUPABASE_ACCESS_TOKEN` y la referencia y contraseña de la base de datos de cada proyecto.
+   - Supabase: `SUPABASE_PROD_DB_URL` y `SUPABASE_STAGING_DB_URL`. Son las cadenas de conexión "Session pooler", que funcionan por IPv4 desde GitHub Actions.
    - Copias: `BACKUP_PASSPHRASE`.
+   - Variable (no secreta) `APP_URL`: la dirección pública de producción.
 6. **Variables de entorno en Vercel:**
    - Supabase (producción para Production, pruebas para Preview).
    - SMTP: usuario y contraseña de aplicación.
