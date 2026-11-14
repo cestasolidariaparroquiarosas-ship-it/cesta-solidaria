@@ -85,7 +85,9 @@ jobs:
         if: env.ES_REPUBLICACION != 'true'
         env:
           DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
-        run: npx supabase db push --yes --remote="$DB_URL"
+        run: |
+          npx supabase db push --yes --remote="$DB_URL"
+          psql "$DB_URL" --variable ON_ERROR_STOP=1 --file scripts/comprobar-rls.sql
 
       - name: Desplegar vista previa (conectada a pruebas)
         id: desplegar
@@ -128,7 +130,9 @@ jobs:
         if: env.ES_REPUBLICACION != 'true'
         env:
           DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
-        run: npx supabase db push --yes --remote="$DB_URL"
+        run: |
+          npx supabase db push --yes --remote="$DB_URL"
+          psql "$DB_URL" --variable ON_ERROR_STOP=1 --file scripts/comprobar-rls.sql
 
       - name: Desplegar producción
         run: |
