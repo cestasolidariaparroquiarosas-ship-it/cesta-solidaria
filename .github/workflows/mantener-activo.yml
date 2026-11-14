@@ -1,0 +1,29 @@
+# Consulta diaria a los dos proyectos de Supabase para que el plan gratuito no los
+# pause por inactividad (spec §9, riesgo 2). No genera artefactos ni muestra datos:
+# solo ejecuta "select 1".
+# Nota: en un repositorio público, GitHub desactiva los `schedule` tras 60 días sin
+# actividad en el repositorio. Si eso pasa, GitHub avisa por correo y basta con
+# reactivarlo en Actions → mantener-activo.
+name: mantener-activo
+
+on:
+  schedule:
+    - cron: "41 4 * * *" # 04:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  consulta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pruebas
+        env:
+          DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: psql "$DB_URL" --quiet --tuples-only -c "select 1;" > /dev/null
+      - name: Producción
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+        run: psql "$DB_URL" --quiet --tuples-only -c "select 1;" > /dev/null

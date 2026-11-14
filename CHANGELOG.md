@@ -5,11 +5,13 @@ Cada versión enlaza los artefactos de la metodología que la originaron (`docs/
 
 ## [0.3.1] - 2026-11-14
 
-Origen: puesta en marcha (spec §7) y revisión de seguridad antes de cargar datos reales.
+Origen: puesta en marcha ([spec](docs/sdlc/0001-cesta-v1/spec.md) §7, [plan](docs/sdlc/0001-cesta-v1/plan.md)) y revisión de seguridad antes de cargar datos reales.
 
 ### Cambiado
 - `vercel.json`: framework Next.js y funciones en Fráncfort (`fra1`), junto a la base de datos. Antes se ejecutaban en Washington (`iad1`).
-- La copia de seguridad diaria se desactiva hasta trasladarla a un repositorio privado: el repositorio ahora es público y sus artefactos de Actions se pueden descargar.
+- La copia de seguridad se desactiva por completo hasta trasladarla a un repositorio privado: el repositorio ahora es público y sus artefactos de Actions se pueden descargar. **CA-34 queda pendiente.**
+- La consulta diaria que evita que Supabase pause los proyectos pasa a `mantener-activo.yml`, ahora para pruebas y producción.
+- Los workflows declaran `permissions: contents: read` por defecto.
 - `docs/operacion.md`: estado real de la puesta en marcha, tipo de las variables de Vercel, verificación en dos pasos y consejos.
 
 ## [0.3.0] - 2026-11-14

@@ -1,6 +1,6 @@
-# Copia de seguridad diaria (spec §7, CA-34) y consulta para que el proyecto
-# de pruebas de Supabase no se pause por inactividad.
-# Restaurar: ver docs/operacion.md.
+# Copia de seguridad (spec §7, CA-34). DESACTIVADA en este repositorio público: se
+# trasladará a un repositorio privado (docs/operacion.md, "Copias de seguridad").
+# La consulta que evita que Supabase se pause está en mantener-activo.yml.
 # Si falla, GitHub avisa por correo al último usuario que modificó el cron de este
 # archivo: el responsable debe revisar Actions → backup de vez en cuando (docs/operacion.md).
 name: backup
@@ -18,8 +18,13 @@ concurrency:
   group: backup
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   copia:
+    # No se ejecuta ni a mano mientras el repositorio sea público: subiría el artefacto.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -55,12 +60,3 @@ jobs:
           name: copia-${{ env.FECHA }}
           path: copia-${{ env.FECHA }}.tar.gz.gpg
           retention-days: 30
-
-  mantener-pruebas-activo:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Consulta al proyecto de pruebas
-        env:
-          DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
-        run: psql "$DB_URL" -c "select 1;"
