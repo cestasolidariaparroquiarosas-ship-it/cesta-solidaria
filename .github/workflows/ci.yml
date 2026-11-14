@@ -43,6 +43,9 @@ jobs:
       - name: Aplicar migraciones y datos de prueba
         run: npx supabase db reset
 
+      - name: RLS y permisos en todas las tablas (CA-23)
+        run: psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" --variable ON_ERROR_STOP=1 --file scripts/comprobar-rls.sql
+
       - name: Variables de entorno locales
         run: npm run supabase:env
 

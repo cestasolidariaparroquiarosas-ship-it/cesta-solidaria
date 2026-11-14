@@ -3,6 +3,35 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [0.2.0] - 2026-11-14
+
+Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 1.
+
+### Añadido
+- Migración inicial con todas las tablas del modelo de datos (spec §3): colaboradores, etiquetas de exclusión, alimentos, listas base, semanas, cestas, asignaciones y registro de eventos.
+- Row Level Security en todas las tablas: solo los administradores (`app_metadata.rol = "admin"`, sesión no anónima) leen o escriben. El rol anónimo no tiene ningún permiso sobre las tablas (CA-23).
+- `scripts/comprobar-rls.sql`: falla si alguna tabla queda sin RLS o sin una política que exija ser administrador, si los anónimos tienen permisos sobre tablas o funciones, si una vista o vista materializada se salta la RLS, o si una función `SECURITY DEFINER` es ejecutable por usuarios. Se ejecuta en CI y después de cada migración en pruebas y producción.
+- Restricciones en la base de datos:
+  - Correo de colaborador único sin distinguir mayúsculas (CA-01).
+  - Ningún alimento de una cesta choca con sus exclusiones, ni al añadir el alimento ni al añadir la exclusión (CA-07).
+  - Un colaborador tiene como mucho una asignación por semana; también evita que dos rechazos simultáneos elijan al mismo sustituto.
+  - Al borrar un colaborador, sus asignaciones se conservan sin él, como "Colaborador eliminado" (CA-04).
+  - Como mucho una lista base predeterminada.
+- Las cinco etiquetas de exclusión iniciales (cerdo, gluten, lactosa, frutos secos, huevo) van en la migración, para que existan también en producción.
+- `supabase/seed.sql` (solo local y CI): catálogo de ejemplo y lista "Familia estándar". Sin colaboradores de ejemplo, para que las pruebas de selección sean deterministas.
+- Pruebas de integración del esquema: acceso anónimo, usuario sin rol y administrador sobre cada tabla, y las restricciones anteriores.
+
+### Notas de diseño (respecto al spec §3)
+- Los estados se guardan como texto con `CHECK`, no como `ENUM`, para poder ampliarlos sin romper la versión anterior.
+- `semanas.cerrada_en`: fecha de cierre, para la conservación a 12 meses (spec §10). `semanas.fecha_entrega` es única.
+- `registro_eventos.semana_id`: para avisos que no son de una asignación concreta, como "sin candidatos" (R4.6).
+- Las relaciones N:M se llaman `alimento_etiquetas` y `cesta_exclusiones`. Su clave es la pareja de ids y solo tienen `creado_en`: no se editan, se crean o se borran.
+- `asignaciones`: una asignación `pendiente` debe tener plazo, para que el cron pueda vencerla (R4.5).
+- Quitar de una cesta un alimento que ya tiene colaborador falla a propósito, para que el histórico no cambie en silencio. Borrar la semana entera sí funciona.
+- El registro de eventos se conserva aunque se borre la semana.
+- Las funciones nuevas de `public` no se pueden ejecutar como anónimo por defecto. Las `SECURITY DEFINER` (como la futura reasignación, PR 6) las llama solo el servidor.
+- Añadir una etiqueta a un alimento del catálogo nunca se bloquea: si choca con una cesta ya creada, avisará la pantalla de la cesta (PR 4).
+
 ## [0.1.0] - 2026-11-14
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 0.

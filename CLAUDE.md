@@ -26,10 +26,15 @@ Iteración vigente: `docs/sdlc/0001-cesta-v1/`.
 - **Migraciones:**
   - En `supabase/migrations/`, solo hacia delante.
   - Siempre compatibles con la versión anterior del código (expandir y luego contraer): nunca se renombra ni se borra una columna en el mismo PR que deja de usarla.
+  - Toda tabla nueva de `public`: `enable row level security`, `revoke all ... from anon` y política `to authenticated` con `(select privado.es_admin())`. `scripts/comprobar-rls.sql` lo comprueba en CI y en cada despliegue.
+  - Las funciones auxiliares van en el esquema `privado`, que la API no expone. Las vistas, con `security_invoker = true`.
+  - Estados como `text` con `CHECK`, no `ENUM`.
+  - `seed.sql` solo se carga en local y en CI. Los datos que necesita producción van en una migración.
 - **Datos personales (RGPD):**
   - De los receptores, solo un identificador.
   - Las exclusiones son alimentarias ("sin cerdo"), nunca religión ni salud.
   - Nunca se escriben nombres ni correos en los logs.
+  - Tampoco objetos de error de Supabase completos: un 23505 de correo repetido lleva el correo en `details`. Los errores se tratan por `code`.
 - **Seguridad:**
   - Row Level Security en todas las tablas.
   - La clave secreta de Supabase solo se usa en el servidor (`lib/supabase/`).

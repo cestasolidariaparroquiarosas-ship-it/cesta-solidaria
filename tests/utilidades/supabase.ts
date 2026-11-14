@@ -46,6 +46,14 @@ async function asegurarUsuario(
   }
 }
 
+/** Cliente con la sesión iniciada de un usuario de pruebas. */
+export async function clienteConSesion(credenciales: { email: string; password: string }) {
+  const cliente = clienteAnonimo();
+  const { error } = await cliente.auth.signInWithPassword(credenciales);
+  if (error) throw error;
+  return cliente;
+}
+
 /** Crea (o deja como están) el administrador y el usuario sin rol de pruebas. */
 export async function asegurarUsuariosPruebas() {
   await asegurarUsuario(ADMIN_PRUEBAS, { rol: "admin" });
