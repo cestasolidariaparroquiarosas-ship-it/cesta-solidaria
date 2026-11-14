@@ -66,5 +66,7 @@ npm run version:check     # política de versiones
 - `lib/dominio/`: lógica pura (R1–R3).
 - `lib/servicios/`: base de datos y correo.
 - `tests/unit`, `tests/integration` y `tests/e2e`. Las pruebas `@humo` se ejecutan contra los entornos desplegados.
+  - En e2e, los mensajes de error se buscan con `alerta(page, texto)` de `tests/e2e/utilidades.ts`: Next.js añade un anunciador de rutas que también tiene `role="alert"`.
+  - Los formularios con `useActionState` devuelven lo enviado en el estado (`valores`) cuando hay un error, porque React vacía el formulario tras cada envío.
 - `.github/workflows/`: `ci.yml` (PR), `deploy.yml` (main y republicación) y `backup.yml` (diario).
 - `docs/operacion.md`: puesta en marcha, cómo volver a una versión anterior y cómo restaurar copias.

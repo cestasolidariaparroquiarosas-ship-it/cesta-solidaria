@@ -3,7 +3,10 @@ import { requerirAdmin } from "@/lib/auth";
 import { cerrarSesion } from "@/app/login/acciones";
 
 // Las secciones se irán activando en los siguientes PR del plan.
-const SECCIONES = [{ href: "/", nombre: "Inicio" }];
+const SECCIONES = [
+  { href: "/", nombre: "Inicio" },
+  { href: "/colaboradores", nombre: "Colaboradores" },
+];
 
 export default async function LayoutAdmin({ children }: LayoutProps<"/">) {
   const admin = await requerirAdmin();
