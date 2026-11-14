@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { ADMIN_PRUEBAS, SIN_ROL_PRUEBAS } from "../utilidades/supabase";
+import { alerta } from "./utilidades";
 
 // Pruebas @humo: no necesitan datos ni credenciales, así que se pueden ejecutar
 // contra pruebas y producción después de cada despliegue (deploy.yml).
@@ -49,7 +50,7 @@ test.describe("acceso con credenciales", () => {
     await page.getByLabel("Correo electrónico").fill(ADMIN_PRUEBAS.email);
     await page.getByLabel("Contraseña").fill("incorrecta-123");
     await page.getByRole("button", { name: "Entrar" }).click();
-    await expect(page.getByRole("alert")).toHaveText("Correo o contraseña incorrectos.");
+    await expect(alerta(page, "Correo o contraseña incorrectos.")).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
   });
 
@@ -58,7 +59,7 @@ test.describe("acceso con credenciales", () => {
     await page.getByLabel("Correo electrónico").fill(SIN_ROL_PRUEBAS.email);
     await page.getByLabel("Contraseña").fill(SIN_ROL_PRUEBAS.password);
     await page.getByRole("button", { name: "Entrar" }).click();
-    await expect(page.getByRole("alert")).toHaveText("Correo o contraseña incorrectos.");
+    await expect(alerta(page, "Correo o contraseña incorrectos.")).toBeVisible();
     await page.goto("/");
     await expect(page).toHaveURL(/\/login$/);
   });
