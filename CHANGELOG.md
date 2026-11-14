@@ -3,6 +3,31 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [0.4.0] - 2026-11-15
+
+Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 3.
+
+### Añadido
+- **Alimentos** (spec §5.4): catálogo con nombre, unidad, precio aproximado y lo que "contiene" (etiquetas). Alta, edición, desactivación y eliminación. Por defecto la lista muestra solo los activos.
+- **Etiquetas de exclusión**: alta, cambio de nombre y eliminación. No se puede eliminar una etiqueta que lleva algún alimento o que usa alguna cesta.
+- **Listas base** (spec §5.5): plantillas con las unidades al mes por adulto y por niño de cada alimento, con decimales (R1.1). Una sola predeterminada.
+- Migración `20261115000000_catalogo.sql` con dos funciones SQL (con los permisos de quien llama, así que la RLS se aplica):
+  - `guardar_alimento`: guarda el alimento y sus etiquetas de una vez. Si fallaran las etiquetas después de guardar el alimento, podría quedar un "chorizo" sin la etiqueta "cerdo" y acabar en una cesta "sin cerdo".
+  - `marcar_lista_predeterminada`: cambia la predeterminada de una vez.
+- Piezas de formulario compartidas en `app/(admin)/_ui/` (campos accesibles, avisos y estilos).
+
+### Notas de diseño
+- Los precios y cantidades admiten coma o punto decimal, con dos decimales como mucho.
+- Un alimento de una lista base no puede tener 0 por adulto y 0 por niño: nunca entraría en una cesta.
+- No se puede eliminar un alimento que esté en una lista base o en una cesta; se desactiva. Así el histórico no cambia (CA-08).
+- Un alimento desactivado que sigue en una lista base se marca en la lista: no se propondrá en las cestas (lo aplicará R1 en el PR 4).
+- La etiqueta se nombra por lo que se excluye ("cerdo"); su código interno se genera del nombre y no cambia al renombrarla. El nombre es único sin distinguir mayúsculas: dos "cerdo" (una en la cesta y otra en el alimento) dejarían pasar el alimento.
+- Eliminar una etiqueta pide confirmación.
+
+### Pendiente para el PR 4 (revisión independiente)
+- Añadir una etiqueta a un alimento que ya está en una cesta con esa exclusión no se bloquea (decisión del PR 1): la cesta debe avisar del choque, con una prueba de CA-06 que añada la etiqueta después de crear la cesta.
+- Cambiar la unidad de un alimento que ya está en cestas sin cerrar cambia lo que se pide a los colaboradores: avisar o bloquear, o copiar la unidad en `cesta_items` como el precio.
+
 ## [0.3.1] - 2026-11-14
 
 Origen: puesta en marcha ([spec](docs/sdlc/0001-cesta-v1/spec.md) §7, [plan](docs/sdlc/0001-cesta-v1/plan.md)) y revisión de seguridad antes de cargar datos reales.

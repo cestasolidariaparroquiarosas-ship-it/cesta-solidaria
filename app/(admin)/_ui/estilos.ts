@@ -1,4 +1,4 @@
-// Clases de Tailwind compartidas por las pantallas de colaboradores.
+// Clases de Tailwind compartidas por las pantallas de gestión.
 export const ENTRADA = "rounded-md border border-stone-300 px-3 py-2 text-base font-normal";
 export const ETIQUETA = "flex flex-col gap-1 text-sm font-medium";
 export const BOTON_PRINCIPAL =

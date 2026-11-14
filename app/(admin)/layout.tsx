@@ -6,6 +6,8 @@ import { cerrarSesion } from "@/app/login/acciones";
 const SECCIONES = [
   { href: "/", nombre: "Inicio" },
   { href: "/colaboradores", nombre: "Colaboradores" },
+  { href: "/alimentos", nombre: "Alimentos" },
+  { href: "/listas", nombre: "Listas base" },
 ];
 
 export default async function LayoutAdmin({ children }: LayoutProps<"/">) {

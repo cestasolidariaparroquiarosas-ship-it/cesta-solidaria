@@ -61,7 +61,7 @@ npm run version:check     # política de versiones
 
 ## Estructura
 
-- `app/(admin)/`: pantallas protegidas.
+- `app/(admin)/`: pantallas protegidas. Las piezas de formulario y los estilos comunes están en `app/(admin)/_ui/`.
 - `app/login`, `app/r/[token]` y `app/baja/[token]`: rutas públicas.
 - `lib/dominio/`: lógica pura (R1–R3).
 - `lib/servicios/`: base de datos y correo.
