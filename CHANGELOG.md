@@ -17,9 +17,6 @@ Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-ces
 - "Eliminar definitivamente" borra el nombre y el correo de todas las tablas, y sus asignaciones se conservan sin colaborador (CA-04). El texto "Colaborador eliminado" ya está preparado; se verá en pantalla cuando haya pantallas con asignaciones (PR 5 y PR 8).
 - `docs/operacion.md`: cómo borrar los datos de un colaborador y qué hacer con los borrados al restaurar una copia.
 
-### Corregido
-- Pruebas e2e de acceso: el anunciador de rutas de Next.js también tiene `role="alert"`, así que la comprobación del mensaje de error encontraba dos elementos. Nuevo ayudante `alerta()` en `tests/e2e/utilidades.ts`.
-
 ### Notas de diseño (respecto al spec)
 - **Pausa sin fecha:** es indefinida; el colaborador no es candidato hasta que se reactive. `pausado_hasta` es el último día de la pausa, incluido.
 - **Consentimiento obligatorio en el alta:** se guarda la fecha en `fecha_consentimiento`. A los colaboradores que no lo tengan registrado, la ficha permite anotarlo después.

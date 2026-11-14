@@ -16,11 +16,11 @@
 | 7 | MENOR | La parte visible de CA-04 ("Colaborador eliminado") solo se probaba con una función que aún no usa ninguna pantalla | Títulos de prueba y CHANGELOG marcados como parciales; la e2e llegará con las pantallas de asignaciones (PR 5 y PR 8) |
 
 **Hallazgo propio durante la verificación (antes de la revisión):**
-- Las pruebas e2e de acceso del PR 0 que comprueban mensajes de error fallaban: el anunciador de rutas de Next.js también tiene `role="alert"`. Nunca se habían llegado a ejecutar con credenciales. Corregido con el ayudante `alerta()`.
+- Las pruebas e2e de acceso del PR 0 que comprueban mensajes de error fallaban: el anunciador de rutas de Next.js también tiene `role="alert"`. Nunca se habían llegado a ejecutar con credenciales; CI lo confirmó al abrir los PR. Corregido en el propio PR 0 con el ayudante `alerta()`.
 - React 19 vacía el formulario tras cada envío, así que un error de validación borraba lo escrito. Las acciones devuelven lo enviado (`valores`).
 
 **Verificado en local:**
 - Lint, typecheck, 47 pruebas unitarias, `version:check` y `next build`.
 - Las 14 pruebas e2e (escritorio y 375 px), incluidas las de colaboradores y las de acceso con credenciales, contra un Supabase falso en memoria que imita lo justo de Auth y de PostgREST. Ese simulador no está en el repositorio: sirve para probar las pantallas, no la base de datos.
 
-**Pendiente de verificar en GitHub Actions:** las pruebas de integración contra Supabase local (`tests/integration/colaboradores.test.ts`) y las e2e contra Supabase local de verdad. En esta sesión no hay Docker.
+**Verificado en GitHub Actions:** CI completo en verde (lint, tipos, unitarias, RLS, integración contra Supabase local y e2e).
