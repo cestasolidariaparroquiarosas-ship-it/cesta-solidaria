@@ -132,9 +132,27 @@ test.describe("catálogo en el móvil", () => {
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await sinDesbordar(page);
     }
+    // Ficha de un alimento y lista con una fila, que son las pantallas más anchas.
+    await page.goto("/alimentos/nuevo");
+    await page.getByLabel("Nombre").fill(`${MARCA} Garbanzos cocidos en bote de cristal`);
+    await page.getByLabel("Unidad").fill("bote 400 g");
+    await page.getByLabel("Precio aproximado (€)").fill("0,90");
+    await page.getByRole("button", { name: "Dar de alta" }).click();
+    await expect(page).toHaveURL(/aviso=creado/);
+    await page.getByRole("link", { name: new RegExp(`${MARCA} Garbanzos`) }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await sinDesbordar(page);
+
+    await page.goto("/listas");
     await page.getByLabel("Nueva lista").fill(`${MARCA} Móvil con un nombre bastante largo`);
     await page.getByRole("button", { name: "Crear lista" }).click();
     await expect(page.getByRole("status")).toBeVisible();
+    await page
+      .getByLabel("Alimento", { exact: true })
+      .selectOption({ label: `${MARCA} Garbanzos cocidos en bote de cristal (bote 400 g)` });
+    await page.getByLabel("Por adulto al mes").fill("2");
+    await page.getByRole("button", { name: "Añadir a la lista" }).click();
+    await expect(page.getByRole("status")).toHaveText("Alimento añadido.");
     await sinDesbordar(page);
   });
 });

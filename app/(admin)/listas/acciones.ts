@@ -50,7 +50,7 @@ export async function crearListaAccion(_estado: EstadoLista, formData: FormData)
     if (resultado.error === "duplicado") {
       return { errores: { nombre: "Ya hay una lista con ese nombre." }, valores: valores(formData, ["nombre"]) };
     }
-    return { error: GENERICOS[resultado.error] };
+    return { error: GENERICOS[resultado.error], valores: valores(formData, ["nombre"]) };
   }
   aFicha(resultado.valor.id, "creada");
 }
@@ -65,7 +65,7 @@ export async function renombrarListaAccion(id: string, _estado: EstadoLista, for
     if (resultado.error === "duplicado") {
       return { errores: { nombre: "Ya hay una lista con ese nombre." }, valores: valores(formData, ["nombre"]) };
     }
-    return { error: GENERICOS[resultado.error] };
+    return { error: GENERICOS[resultado.error], valores: valores(formData, ["nombre"]) };
   }
   aFicha(id, "guardada");
 }
@@ -73,7 +73,10 @@ export async function renombrarListaAccion(id: string, _estado: EstadoLista, for
 export async function marcarPredeterminadaAccion(id: string): Promise<EstadoLista> {
   await requerirAdmin();
   const resultado = await marcarListaPredeterminada(await crearClienteServidor(), id);
-  if (!resultado.ok) return { error: GENERICOS[resultado.error] };
+  if (!resultado.ok) {
+    if (resultado.error === "duplicado") return { error: "Otra persona acaba de cambiar la predeterminada. Recarga la página." };
+    return { error: GENERICOS[resultado.error] };
+  }
   aFicha(id, "predeterminada");
 }
 
@@ -105,7 +108,7 @@ export async function anadirAlimentoAccion(listaId: string, _estado: EstadoLista
     if (resultado.error === "duplicado") {
       return { errores: { alimento_id: "Ese alimento ya está en la lista." }, valores: valores(formData, CAMPOS_ITEM) };
     }
-    return { error: GENERICOS[resultado.error] };
+    return { error: GENERICOS[resultado.error], valores: valores(formData, CAMPOS_ITEM) };
   }
   aFicha(listaId, "anadido");
 }
@@ -124,7 +127,7 @@ export async function cambiarCantidadesAccion(
   if (!validacion.ok) return { errores: validacion.errores, valores: valores(formData, CAMPOS_ITEM) };
 
   const resultado = await cambiarCantidades(await crearClienteServidor(), itemId, validacion.datos);
-  if (!resultado.ok) return { error: GENERICOS[resultado.error] };
+  if (!resultado.ok) return { error: GENERICOS[resultado.error], valores: valores(formData, CAMPOS_ITEM) };
   aFicha(listaId, "cantidades");
 }
 

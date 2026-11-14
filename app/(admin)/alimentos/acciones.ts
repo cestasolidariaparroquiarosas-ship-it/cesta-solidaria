@@ -72,7 +72,9 @@ export async function guardarAlimentoAccion(
         valores: valoresAlimento(formData),
       };
     }
-    return { error: GENERICOS[resultado.error], valores: valoresAlimento(formData) };
+    const error =
+      resultado.error === "en_uso" ? "Alguna etiqueta marcada ya no existe. Recarga la página." : GENERICOS[resultado.error];
+    return { error, valores: valoresAlimento(formData) };
   }
 
   refrescar(`/alimentos/${resultado.valor.id}`);
@@ -111,9 +113,12 @@ export async function crearEtiquetaAccion(_estado: EstadoAccion, formData: FormD
   const resultado = await crearEtiqueta(await crearClienteServidor(), validacion.datos);
   if (!resultado.ok) {
     if (resultado.error === "duplicado") {
-      return { errores: { nombre: "Ya existe esa etiqueta." }, valores: { nombre: validacion.datos.nombre } };
+      return {
+        errores: { nombre: "Ya existe una etiqueta con ese nombre, o se llamó así antes de renombrarla." },
+        valores: { nombre: validacion.datos.nombre },
+      };
     }
-    return { error: GENERICOS[resultado.error] };
+    return { error: GENERICOS[resultado.error], valores: { nombre: validacion.datos.nombre } };
   }
 
   refrescar();
@@ -123,18 +128,25 @@ export async function crearEtiquetaAccion(_estado: EstadoAccion, formData: FormD
 export async function renombrarEtiquetaAccion(id: string, _estado: EstadoAccion, formData: FormData): Promise<EstadoAccion> {
   await requerirAdmin();
 
+  const enviado = { nombre: String(formData.get("nombre") ?? "") };
   const validacion = validarEtiqueta({ nombre: formData.get("nombre") });
-  if (!validacion.ok) return { errores: validacion.errores };
+  if (!validacion.ok) return { errores: validacion.errores, valores: enviado };
 
   const resultado = await renombrarEtiqueta(await crearClienteServidor(), id, validacion.datos.nombre);
-  if (!resultado.ok) return { error: GENERICOS[resultado.error] };
+  if (!resultado.ok) {
+    if (resultado.error === "duplicado") {
+      return { errores: { nombre: "Ya hay otra etiqueta con ese nombre." }, valores: enviado };
+    }
+    return { error: GENERICOS[resultado.error], valores: enviado };
+  }
 
   refrescar();
   redirect("/alimentos/etiquetas?aviso=guardada");
 }
 
-export async function eliminarEtiquetaAccion(id: string): Promise<EstadoAccion> {
+export async function eliminarEtiquetaAccion(id: string, _estado: EstadoAccion, formData: FormData): Promise<EstadoAccion> {
   await requerirAdmin();
+  if (formData.get("confirmar") !== "si") return { error: "Marca «Confirmar» para eliminarla." };
 
   const resultado = await eliminarEtiqueta(await crearClienteServidor(), id);
   if (!resultado.ok) {

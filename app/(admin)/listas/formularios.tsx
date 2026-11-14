@@ -181,7 +181,7 @@ export function FilaItem({
               <input {...props} name="cantidad_por_nino" defaultValue={v.cantidad_por_nino} inputMode="decimal" className={CANTIDAD} />
             )}
           </Campo>
-          <button type="submit" disabled={guardando} className={BOTON_SECUNDARIO}>
+          <button type="submit" disabled={guardando} className={BOTON_SECUNDARIO} aria-label={`Guardar cantidades de ${nombre}`}>
             Guardar
           </button>
         </form>

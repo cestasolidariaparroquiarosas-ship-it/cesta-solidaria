@@ -75,8 +75,8 @@ export function FormularioAlimento({
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">Contiene</legend>
         <p className="text-xs text-stone-500">
-          Marca lo que contiene. Una cesta &quot;sin cerdo&quot; nunca llevará alimentos marcados con
-          &quot;cerdo&quot;.
+          Marca lo que contiene. Al proponer o completar una cesta &quot;sin cerdo&quot;, no se podrán
+          añadir alimentos marcados con &quot;cerdo&quot;.
         </p>
         {etiquetas.length === 0 ? (
           <p className="text-sm text-stone-600">No hay etiquetas. Créalas en la pantalla de etiquetas.</p>
@@ -181,30 +181,40 @@ export function FilaEtiqueta({
               <input
                 {...props}
                 name="nombre"
-                defaultValue={etiqueta.nombre}
+                defaultValue={estadoNombre.valores?.nombre ?? etiqueta.nombre}
                 maxLength={LIMITES_CATALOGO.nombreEtiqueta}
                 autoComplete="off"
                 className={`${ENTRADA} w-48`}
               />
             )}
           </Campo>
-          <button type="submit" disabled={guardando} className={BOTON_SECUNDARIO}>
+          <button
+            type="submit"
+            disabled={guardando}
+            className={BOTON_SECUNDARIO}
+            aria-label={`Guardar etiqueta «${etiqueta.nombre}»`}
+          >
             Guardar
           </button>
         </form>
-        <form action={enviarBorrar}>
-          <button
-            type="submit"
-            disabled={borrando || alimentos > 0}
-            title={alimentos > 0 ? "La llevan algunos alimentos" : undefined}
-            className={BOTON_SECUNDARIO}
-          >
-            Eliminar
-          </button>
-        </form>
+        {alimentos === 0 && (
+          <form action={enviarBorrar} className="flex items-center gap-2">
+            <Casilla nombre="confirmar" texto="Confirmar" />
+            <button
+              type="submit"
+              disabled={borrando}
+              className={BOTON_SECUNDARIO}
+              aria-label={`Eliminar etiqueta «${etiqueta.nombre}»`}
+            >
+              Eliminar
+            </button>
+          </form>
+        )}
       </div>
       <p className="text-xs text-stone-500">
-        {alimentos === 0 ? "Ningún alimento la lleva." : `La llevan ${alimentos} alimento${alimentos === 1 ? "" : "s"}.`}
+        {alimentos === 0
+          ? "Ningún alimento la lleva."
+          : `La llevan ${alimentos} alimento${alimentos === 1 ? "" : "s"}: no se puede eliminar.`}
       </p>
       <ErrorGeneral estado={estadoNombre} />
       <ErrorGeneral estado={estadoBorrar} />

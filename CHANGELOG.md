@@ -21,7 +21,12 @@ Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-ces
 - Un alimento de una lista base no puede tener 0 por adulto y 0 por niño: nunca entraría en una cesta.
 - No se puede eliminar un alimento que esté en una lista base o en una cesta; se desactiva. Así el histórico no cambia (CA-08).
 - Un alimento desactivado que sigue en una lista base se marca en la lista: no se propondrá en las cestas (lo aplicará R1 en el PR 4).
-- La etiqueta se nombra por lo que se excluye ("cerdo"); su código interno se genera del nombre y no cambia al renombrarla.
+- La etiqueta se nombra por lo que se excluye ("cerdo"); su código interno se genera del nombre y no cambia al renombrarla. El nombre es único sin distinguir mayúsculas: dos "cerdo" (una en la cesta y otra en el alimento) dejarían pasar el alimento.
+- Eliminar una etiqueta pide confirmación.
+
+### Pendiente para el PR 4 (revisión independiente)
+- Añadir una etiqueta a un alimento que ya está en una cesta con esa exclusión no se bloquea (decisión del PR 1): la cesta debe avisar del choque, con una prueba de CA-06 que añada la etiqueta después de crear la cesta.
+- Cambiar la unidad de un alimento que ya está en cestas sin cerrar cambia lo que se pide a los colaboradores: avisar o bloquear, o copiar la unidad en `cesta_items` como el precio.
 
 ## [0.3.1] - 2026-11-14
 

@@ -91,6 +91,19 @@ describe("servicio del catálogo", () => {
       });
     });
 
+    it("guardar con la lista de etiquetas vacía le quita todas", async () => {
+      const id = await alimento("sin nada", [cerdo, gluten]);
+      await guardarAlimento(admin, id, {
+        nombre: `${MARCA} sin nada`,
+        unidad: "paquete",
+        precio_aprox: 1.5,
+        activo: true,
+        etiquetas: [],
+      });
+      const r = await obtenerAlimento(admin, id);
+      expect(r.ok && r.valor.etiquetas).toEqual([]);
+    });
+
     it("las etiquetas se guardan junto con el alimento o no se guarda nada (una etiqueta inexistente lo anula todo)", async () => {
       const r = await guardarAlimento(admin, null, {
         nombre: `${MARCA} atómico`,
@@ -182,6 +195,17 @@ describe("servicio del catálogo", () => {
     it("no admite dos etiquetas con el mismo código", async () => {
       expect(await crearEtiqueta(admin, { nombre: "cerdo", codigo: "cerdo" })).toEqual({ ok: false, error: "duplicado" });
     });
+
+    it("no se puede renombrar una etiqueta con el nombre de otra (dos «cerdo» romperían las exclusiones)", async () => {
+      const codigo = `${MARCA.replace("-", "_")}_otra`;
+      const r = await crearEtiqueta(admin, { nombre: "otra de prueba", codigo });
+      const id = r.ok ? r.valor.id : "";
+      expect(await renombrarEtiqueta(admin, id, "Cerdo")).toEqual({ ok: false, error: "duplicado" });
+      expect(await crearEtiqueta(admin, { nombre: "otra de prueba", codigo: `${codigo}_2` })).toEqual({
+        ok: false,
+        error: "duplicado",
+      });
+    });
   });
 
   describe("listas base", () => {
@@ -219,25 +243,26 @@ describe("servicio del catálogo", () => {
       const a = await crearLista(admin, `${MARCA} A`);
       const b = await crearLista(admin, `${MARCA} B`);
       if (!a.ok || !b.ok) throw new Error("no se crearon");
-      // La predeterminada de seed.sql se vuelve a marcar al final.
+      // La predeterminada de seed.sql se vuelve a marcar al final, falle o no la prueba.
       const { data: antes } = await servicio.from("listas_base").select("id").eq("predeterminada", true).maybeSingle();
+      try {
+        expect(await marcarListaPredeterminada(admin, a.valor.id)).toEqual({ ok: true, valor: undefined });
+        expect(await marcarListaPredeterminada(admin, b.valor.id)).toEqual({ ok: true, valor: undefined });
 
-      expect(await marcarListaPredeterminada(admin, a.valor.id)).toEqual({ ok: true, valor: undefined });
-      expect(await marcarListaPredeterminada(admin, b.valor.id)).toEqual({ ok: true, valor: undefined });
+        const listas = await listarListas(admin);
+        const predeterminadas = listas.ok ? listas.valor.filter((l) => l.predeterminada) : [];
+        expect(predeterminadas.map((l) => l.id)).toEqual([b.valor.id]);
 
-      const listas = await listarListas(admin);
-      const predeterminadas = listas.ok ? listas.valor.filter((l) => l.predeterminada) : [];
-      expect(predeterminadas.map((l) => l.id)).toEqual([b.valor.id]);
-
-      // Si la lista no existe, no cambia nada (tampoco se desmarca la actual).
-      expect(await marcarListaPredeterminada(admin, "00000000-0000-4000-8000-000000000000")).toEqual({
-        ok: false,
-        error: "no_encontrado",
-      });
-      const despues = await listarListas(admin);
-      expect(despues.ok && despues.valor.filter((l) => l.predeterminada).map((l) => l.id)).toEqual([b.valor.id]);
-
-      if (antes) await marcarListaPredeterminada(admin, antes.id);
+        // Si la lista no existe, no cambia nada (tampoco se desmarca la actual).
+        expect(await marcarListaPredeterminada(admin, "00000000-0000-4000-8000-000000000000")).toEqual({
+          ok: false,
+          error: "no_encontrado",
+        });
+        const despues = await listarListas(admin);
+        expect(despues.ok && despues.valor.filter((l) => l.predeterminada).map((l) => l.id)).toEqual([b.valor.id]);
+      } finally {
+        if (antes) await marcarListaPredeterminada(admin, antes.id);
+      }
     });
 
     it("eliminar una lista borra sus cantidades", async () => {

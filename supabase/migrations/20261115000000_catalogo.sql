@@ -5,6 +5,12 @@
 -- Un usuario que no es administrador no puede leer ni cambiar nada con ellas.
 -- Solo las puede ejecutar authenticated (scripts/comprobar-rls.sql vigila que anon no).
 
+-- El nombre de una etiqueta es lo que ve el administrador: no puede haber dos "cerdo"
+-- (una en la cesta y otra en el chorizo dejarían pasar el chorizo a una cesta "sin cerdo").
+-- Al crear ya lo impedía el código único; al renombrar, no.
+create unique index etiquetas_exclusion_nombre_unico
+  on public.etiquetas_exclusion (lower(nombre));
+
 -- Guarda un alimento y sus etiquetas ("contiene cerdo"...) en una sola transacción.
 -- Si se guardara el alimento y fallaran las etiquetas, quedaría un alimento sin su
 -- "contiene cerdo" y podría acabar en una cesta "sin cerdo" (R1.2, CA-06).
