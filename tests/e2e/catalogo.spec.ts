@@ -58,7 +58,9 @@ test.describe("catálogo en escritorio", () => {
 
     // La etiqueta ya no se puede eliminar: la lleva un alimento.
     await page.goto("/alimentos/etiquetas");
-    await expect(page.getByText("La llevan 1 alimento.")).toBeVisible();
+    const filaEtiqueta = page.getByRole("listitem").filter({ hasText: `Etiqueta «${etiqueta}»` });
+    await expect(filaEtiqueta.getByText("La llevan 1 alimento.")).toBeVisible();
+    await expect(filaEtiqueta.getByRole("button", { name: "Eliminar" })).toBeDisabled();
   });
 
   test("editar y desactivar un alimento", async ({ page }) => {
