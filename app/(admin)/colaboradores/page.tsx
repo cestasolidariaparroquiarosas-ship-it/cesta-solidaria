@@ -5,7 +5,7 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { formatearFecha } from "@/lib/fechas";
 import { ESTADOS_COLABORADOR, NOMBRE_ESTADO, esEstadoColaborador } from "@/lib/dominio/colaboradores";
 import { listarColaboradores } from "@/lib/servicios/colaboradores";
-import { BOTON_PRINCIPAL } from "./estilos";
+import { BOTON_PRINCIPAL } from "../_ui/estilos";
 import { EtiquetaEstado } from "./etiqueta-estado";
 
 export const metadata: Metadata = { title: "Colaboradores · Cesta solidaria" };
