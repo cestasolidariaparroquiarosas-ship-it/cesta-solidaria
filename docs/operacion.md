@@ -73,3 +73,11 @@
 
    Con `ON_ERROR_STOP` y `--single-transaction`, o se restaura todo o no se cambia nada.
 4. Comprobar en la app de pruebas que los datos están bien. Solo entonces, y si hace falta, repetir en producción.
+5. **Datos borrados después de la copia (RGPD):** si alguien pidió que se borraran sus datos después de la fecha de la copia, la restauración los vuelve a traer. Antes de usar la app con normalidad, vuelve a eliminarlo desde su ficha ("Eliminar definitivamente").
+
+## Borrar los datos de un colaborador
+
+Si un colaborador pide que se borren sus datos, en Colaboradores → su ficha → "Eliminar definitivamente". Se borran su nombre y su correo de la base de datos; las semanas en que participó se conservan a nombre de "Colaborador eliminado".
+
+- Si tiene alimentos asignados en una semana que aún no ha terminado (propuesta o pendiente de respuesta), la app no deja eliminarlo: primero hay que cambiarlo por otro colaborador en el reparto de esa semana.
+- Las copias de seguridad diarias se guardan 30 días. Sus datos desaparecen de ellas cuando caducan las copias anteriores al borrado.

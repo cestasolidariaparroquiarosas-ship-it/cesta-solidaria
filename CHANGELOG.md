@@ -3,6 +3,35 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [0.3.0] - 2026-11-14
+
+Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 2.
+
+### Añadido
+- Pantalla **Colaboradores** (spec §5.3):
+  - Lista con filtros por estado (todos, activos, en pausa, de baja) y la fecha de la última participación de cada uno.
+  - Alta con nombre, correo, notas y consentimiento. Sin la casilla de consentimiento no se guarda.
+  - Ficha de cada colaborador para editar sus datos, ponerlo en pausa con fecha de vuelta (o sin ella), reactivarlo, darlo de baja y eliminarlo definitivamente.
+- Con un correo que ya existe, sin distinguir mayúsculas, no se guarda y se avisa junto al campo (CA-01).
+- Regla de candidatos de R2.3 en `lib/dominio/colaboradores.ts`, lista para la selección del PR 5: un colaborador en pausa no es candidato si su pausa llega hasta la fecha de entrega o más allá; uno de baja, nunca (CA-02; CA-03 en parte).
+- "Eliminar definitivamente" borra el nombre y el correo de todas las tablas, y sus asignaciones se conservan sin colaborador (CA-04). El texto "Colaborador eliminado" ya está preparado; se verá en pantalla cuando haya pantallas con asignaciones (PR 5 y PR 8).
+- `docs/operacion.md`: cómo borrar los datos de un colaborador y qué hacer con los borrados al restaurar una copia.
+
+### Notas de diseño (respecto al spec)
+- **Pausa sin fecha:** es indefinida; el colaborador no es candidato hasta que se reactive. `pausado_hasta` es el último día de la pausa, incluido.
+- **Consentimiento obligatorio en el alta:** se guarda la fecha en `fecha_consentimiento`. A los colaboradores que no lo tengan registrado, la ficha permite anotarlo después.
+- **Asignaciones en curso:** primero hay que cambiar al colaborador por otro en el reparto de esa semana (PR 5).
+  - No se puede **pausar ni dar de baja** a quien tiene una asignación propuesta o pendiente de respuesta: al enviar la semana le llegaría el correo igualmente (CA-03).
+  - No se puede **eliminar** a quien tiene una asignación propuesta, pendiente o confirmada sin entregar en una semana sin cerrar: quedaría sin nadie que la lleve, o no se sabría a quién llamar.
+- **Correo en minúsculas:** se guarda así para que el aviso de repetido y los envíos sean coherentes.
+- **Teléfono:** no se pide. El spec lo deja para cuando se decida que hace falta.
+- Si un formulario tiene un error, se conserva lo escrito (React vacía los formularios tras cada envío). Los cambios que salen bien vuelven a la ficha con un aviso.
+
+### Pendiente para los siguientes PR
+- **PR 5:** la última participación se calcula leyendo todas las asignaciones confirmadas, y PostgREST corta en 1000 filas. Para la lista basta durante años, pero la selección de R2.4 debe usar una vista agregada, y esta lista también. Comprobar y borrar un colaborador son dos pasos: con el reparto ya existente, valorar hacerlo en una función SQL con bloqueo.
+- **PR 6:** CA-03 completo. Comprobar el estado del colaborador justo antes de enviar cada correo, y decidir qué pasa con sus asignaciones en curso cuando se da de baja desde el enlace del correo (R5.1).
+- Los errores de la base de datos se tratan por su código y nunca se registran enteros, porque el de correo repetido incluye el correo.
+
 ## [0.2.0] - 2026-11-14
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 1.
