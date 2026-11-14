@@ -33,7 +33,7 @@ test.describe("catálogo en escritorio", () => {
     await page.getByLabel("Nueva etiqueta").fill(etiqueta);
     await page.getByRole("button", { name: "Añadir etiqueta" }).click();
     await expect(page.getByRole("status")).toHaveText("Etiqueta añadida.");
-    await expect(page.getByLabel(`Etiqueta «${etiqueta}»`)).toHaveValue(etiqueta);
+    await expect(page.getByRole("textbox", { name: `Etiqueta «${etiqueta}»`, exact: true })).toHaveValue(etiqueta);
 
     await page.goto("/alimentos/nuevo");
     await page.getByLabel("Nombre").fill(`${MARCA} Tofu`);
