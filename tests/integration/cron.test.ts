@@ -48,16 +48,18 @@ describe("tarea diaria", () => {
     if (error) throw new Error(error.message);
     semanas.push(s.id);
     const ids = Object.keys(plazos);
-    const { data: cesta } = await servicio
+    const { data: cesta, error: errorCesta } = await servicio
       .from("cestas")
       .insert({ semana_id: s.id, identificador_receptor: "Familia", adultos: 1, ninos: 0 })
       .select("id")
       .single();
-    const { data: item } = await servicio
+    if (errorCesta) throw new Error(errorCesta.message);
+    const { data: item, error: errorItem } = await servicio
       .from("cesta_items")
-      .insert({ cesta_id: cesta!.id, alimento_id: arroz, cantidad: ids.length })
+      .insert({ cesta_id: cesta.id, alimento_id: arroz, cantidad: ids.length })
       .select("id")
       .single();
+    if (errorItem) throw new Error(errorItem.message);
     const asignaciones: Record<string, string> = {};
     for (const id of ids) {
       const colaboradorId = col[id]?.id ?? id;
@@ -73,10 +75,14 @@ describe("tarea diaria", () => {
         .select("id")
         .single();
       if (e) throw new Error(e.message);
-      await servicio.from("asignacion_items").insert({ asignacion_id: a.id, cesta_item_id: item!.id, cantidad: 1 });
+      const { error: errorAi } = await servicio
+        .from("asignacion_items")
+        .insert({ asignacion_id: a.id, cesta_item_id: item.id, cantidad: 1 });
+      if (errorAi) throw new Error(errorAi.message);
       asignaciones[id] = a.id;
     }
-    await servicio.from("semanas").update({ estado: "enviada" }).eq("id", s.id);
+    const { error: errorEnviada } = await servicio.from("semanas").update({ estado: "enviada" }).eq("id", s.id);
+    if (errorEnviada) throw new Error(errorEnviada.message);
     return { id: s.id, asignaciones };
   }
 
@@ -118,8 +124,7 @@ describe("tarea diaria", () => {
   it("CA-20: pasa a «sin respuesta» y reasigna las pendientes con el plazo vencido, y solo esas", async () => {
     // Ana venció hace una hora; Bea aún tiene tiempo.
     const { asignaciones } = await semanaEnviada(fechaFutura(), { Ana: -1, Bea: 24 });
-    // Dora confirmó, con el plazo vencido: no se toca. (Y como ya ha participado,
-    // pasa por detrás de Carmen en R2.4.)
+    // Dora confirmó, con el plazo vencido: no se toca.
     const otra = await semanaEnviada(fechaFutura(), { Dora: -1 });
     const { error } = await servicio
       .from("asignaciones")
@@ -136,7 +141,8 @@ describe("tarea diaria", () => {
     expect(await estado(otra.asignaciones.Dora)).toBe("confirmada");
 
     // R4.4: sus alimentos, al siguiente candidato que no tenga asignación esa semana.
-    // Ana y Bea ya la tienen, y Dora ya participó: Carmen. Y su correo sale en el momento.
+    // Ana y Bea ya la tienen: Carmen, que se dio de alta antes que Dora (y Dora además
+    // ya ha participado). Y su correo sale en el momento.
     const nueva = await sustituta(asignaciones.Ana);
     expect(nueva).toMatchObject({ colaborador_id: col.Carmen.id, estado: "pendiente" });
     expect(nueva!.enviado_en).not.toBeNull();
@@ -146,6 +152,26 @@ describe("tarea diaria", () => {
     await tareaDiaria(servicio, correo, URL_APP);
     expect(await estado(asignaciones.Bea)).toBe("pendiente");
     expect(await sustituta(asignaciones.Bea)).toBeNull();
+  });
+
+  it("CA-20: todas las vencidas de una semana, cada una con un sustituto distinto", async () => {
+    // Los cuatro tienen asignación; vencen dos. Sustitutos: los primeros candidatos sin
+    // asignación esa semana (de esta prueba o de otras), nunca uno de los cuatro ni el mismo.
+    const { asignaciones } = await semanaEnviada(fechaFutura(), { Ana: -2, Bea: -1, Carmen: 24, Dora: 24 });
+    await colaborador("Elena", 5);
+    await colaborador("Flor", 6);
+    await tareaDiaria(servicio, correo, URL_APP);
+    const a = await sustituta(asignaciones.Ana);
+    const b = await sustituta(asignaciones.Bea);
+    expect([a?.colaborador_id, b?.colaborador_id].sort()).toEqual([col.Elena.id, col.Flor.id].sort());
+  });
+
+  it("sin tiempo, no empieza nada: lo deja para mañana", async () => {
+    const { asignaciones } = await semanaEnviada(fechaFutura(), { Carmen: -1 });
+    const resumen = await tareaDiaria(servicio, correo, URL_APP, { limiteMs: 0 });
+    expect(resumen.pendientesParaManana).toBeGreaterThanOrEqual(1);
+    expect(resumen.vencidas).toBe(0);
+    expect(await estado(asignaciones.Carmen)).toBe("pendiente");
   });
 
   it("si la entrega ya pasó, solo se anota «sin respuesta»: ni reasigna ni avisa", async () => {
@@ -179,7 +205,7 @@ describe("tarea diaria", () => {
     expect(aviso?.Text).toContain("no queda ningún otro colaborador disponible");
   });
 
-  it("reintenta los correos que no salieron (y no los de plazo vencido)", async () => {
+  it("reintenta los correos que no salieron", async () => {
     const { asignaciones } = await semanaEnviada(fechaFutura(), { Bea: 24 });
     await servicio.from("asignaciones").update({ enviado_en: null }).eq("id", asignaciones.Bea);
     const antes = (await correosPara(col.Bea.email)).length;

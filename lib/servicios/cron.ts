@@ -29,7 +29,10 @@ export async function tareaDiaria(
   servicio: SupabaseClient,
   correo: Correo,
   urlBase: string,
-  { limiteMs = 45_000 }: { limiteMs?: number } = {},
+  // Margen para el límite de 60 s de la ruta: con Gmail sin responder, un solo correo
+  // puede tardar hasta 31 s (tiempos de espera de lib/correo/transporte.ts). Así que
+  // no se empieza nada nuevo pasados 25 s.
+  { limiteMs = 25_000 }: { limiteMs?: number } = {},
 ): Promise<ResumenDiario> {
   const inicio = Date.now();
   const quedaTiempo = () => Date.now() - inicio < limiteMs;
@@ -103,12 +106,16 @@ export async function tareaDiaria(
   }
 
   // 3. Correos que no salieron (plan §4): de semanas enviadas cuya entrega no ha pasado.
-  const { data: semanas } = await servicio
+  const { data: semanas, error: errorSemanas } = await servicio
     .from("semanas")
     .select("id")
     .eq("estado", "enviada")
     .gte("fecha_entrega", hoy)
     .order("fecha_entrega");
+  if (errorSemanas) {
+    traducirErrorEnvio(errorSemanas);
+    resumen.pendientesParaManana++;
+  }
   for (const { id } of (semanas ?? []) as { id: string }[]) {
     const restante = limiteMs - (Date.now() - inicio);
     if (restante <= 0) break;

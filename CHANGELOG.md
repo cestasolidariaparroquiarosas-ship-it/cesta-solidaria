@@ -20,6 +20,12 @@ Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-ces
 - Migración `20261115220000_cron.sql`: `vencer_asignacion`, que solo puede ejecutar `service_role`. Bloquea la semana y vuelve a comprobar el estado y el plazo antes de cambiar nada, así que si la persona responde mientras tanto, gana su respuesta.
 - `docs/operacion.md`: sección sobre la tarea diaria y cómo comprobar que funciona.
 
+### Revisión independiente
+- 1 hallazgo alto (en una prueba de integración, corregido antes de fusionar) y 5 menores, todos corregidos. Entre ellos: la tarea no empieza nada nuevo pasados 25 s, para que un Gmail lento no la lleve más allá del límite de 60 s; y más pruebas de CA-20 (dos vencidas a la vez, sin tiempo). Conclusiones en el comentario del PR #9.
+
+### Pendientes resueltos
+- **De la 0.7.0:** el cron reasigna con `privado.reasignar` (que bloquea la semana) y reintenta los correos con `enviarPendientes`. No reasigna en semanas cuya entrega ya ha pasado.
+
 ## [0.7.0] - 2026-11-15
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 6.
