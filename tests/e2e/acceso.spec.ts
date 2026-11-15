@@ -12,6 +12,13 @@ test.describe("@humo acceso", () => {
     await expect(page.getByRole("button", { name: "Entrar" })).toBeVisible();
   });
 
+  test("CA-26: el cron rechaza las llamadas sin CRON_SECRET", async ({ request }) => {
+    const sinSecreto = await request.get("/api/cron/diario");
+    expect(sinSecreto.status()).toBe(401);
+    const conOtro = await request.get("/api/cron/diario", { headers: { authorization: "Bearer no-es-el-secreto" } });
+    expect(conOtro.status()).toBe(401);
+  });
+
   test("CA-23: sin sesión, la gestión redirige al acceso", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/login$/);

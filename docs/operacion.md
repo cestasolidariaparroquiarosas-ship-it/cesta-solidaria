@@ -27,7 +27,7 @@
    | `CRON_SECRET` | cadena aleatoria larga | otra distinta |
 
    - Las dos `NEXT_PUBLIC_*` deben ser de tipo **Config**, no "Secret": la app las lee al construirse, y una variable "Secret" llega vacía. Son públicas por diseño (la RLS es la que protege los datos).
-   - Las demás, de tipo **Secret**. Se añaden cuando las usa el código: `SUPABASE_SECRET_KEY` y el correo en el PR 6, `CRON_SECRET` en el PR 7.
+   - Las demás, de tipo **Secret**.
 
 5. **GitHub → Settings → Secrets and variables → Actions:**
    - Secretos:
@@ -113,3 +113,13 @@ Si un colaborador pide que se borren sus datos, en Colaboradores → su ficha �
 - **Si un correo de una semana no sale:** la asignación se queda "Correo no enviado" en el paso 4 de la semana, con el botón "Volver a intentarlo". El cron diario (PR 7) también lo reintentará. En `registro_eventos` queda un `error_envio` con el código del error (nunca la dirección).
 - **Límite de Gmail:** unos 500 correos al día; para esta cesta sobra.
 - **Alimentos sin cubrir:** si alguien no puede y no queda nadie disponible (o ya no hay tiempo antes de la entrega), llega un aviso a `ADMIN_EMAIL` y la semana lo muestra como "Sin cubrir", con el botón "Buscar sustituto" para cuando haya alguien (por ejemplo, tras dar de alta a un colaborador).
+
+## Tarea diaria (cron)
+
+- Vercel llama cada día a `/api/cron/diario` (`vercel.json`: 07:00 UTC, que son las 8:00 en Madrid en invierno y las 9:00 en verano; en el plan gratuito puede llegar en cualquier momento de esa hora). Solo se lanza en producción.
+- Lo que hace:
+  1. Una consulta a la base de datos, para que Supabase no pause el proyecto (CA-27).
+  2. Las asignaciones pendientes con el plazo vencido pasan a "sin respuesta" y sus alimentos van al siguiente colaborador disponible, que recibe su correo. Si no queda nadie, avisa a `ADMIN_EMAIL` (CA-20, CA-21). Si la entrega ya pasó, solo lo anota.
+  3. Reintenta los correos que no salieron.
+- Sin la cabecera `Authorization: Bearer <CRON_SECRET>`, que Vercel añade sola, responde 401 y no hace nada (CA-26). Si se cambia `CRON_SECRET`, vale con cambiarlo en Vercel y volver a desplegar.
+- **Ver si ha funcionado:** Vercel → proyecto → Settings → Cron Jobs (botón "Run" para lanzarlo a mano) y los logs de la función. La respuesta es un resumen con números, sin nombres ni correos.

@@ -3,6 +3,23 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [0.8.0] - 2026-11-15
+
+Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 7.
+
+### Añadido
+- **Tarea diaria** `/api/cron/diario`, que Vercel lanza cada día a las 07:00 UTC (`vercel.json`):
+  - **CA-20:** las asignaciones pendientes con el plazo vencido pasan a "sin respuesta" y se reasignan igual que en un rechazo: los alimentos van al siguiente candidato, que recibe su correo en el momento. Solo esas: las confirmadas, las que aún tienen plazo y las de semanas no enviadas no se tocan.
+  - **CA-21:** si no queda ningún candidato, o ya no hay tiempo antes de la entrega, se avisa al administrador por correo y la semana lo muestra "sin cubrir".
+  - Si la entrega ya pasó, solo se anota "sin respuesta": ni se reasigna ni se avisa.
+  - Reintenta los correos que no salieron (los que aún tienen plazo).
+  - **CA-27:** hace una consulta a la base de datos, para que Supabase no pause el proyecto de producción.
+  - **CA-26:** sin la cabecera `Authorization: Bearer <CRON_SECRET>` responde 401 y no hace nada. Se compara en tiempo constante. Sin `CRON_SECRET` configurado, no acepta ninguna llamada. Hay una prueba `@humo` que lo comprueba en pruebas y en producción tras cada despliegue.
+  - Respeta el límite de tiempo: lo que no le da tiempo a hacer queda para el día siguiente.
+  - La respuesta es un resumen solo con números.
+- Migración `20261115220000_cron.sql`: `vencer_asignacion`, que solo puede ejecutar `service_role`. Bloquea la semana y vuelve a comprobar el estado y el plazo antes de cambiar nada, así que si la persona responde mientras tanto, gana su respuesta.
+- `docs/operacion.md`: sección sobre la tarea diaria y cómo comprobar que funciona.
+
 ## [0.7.0] - 2026-11-15
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 6.
