@@ -6,7 +6,11 @@ import path from "node:path";
 // - integration: contra el Supabase local (supabase start). Solo en CI o en local con Docker.
 export default defineConfig({
   resolve: {
-    alias: { "@": path.resolve(__dirname, ".") },
+    alias: {
+      "@": path.resolve(__dirname, "."),
+      // Los módulos de servidor (correo) se prueban fuera de Next.js.
+      "server-only": path.resolve(__dirname, "tests/utilidades/vacio.ts"),
+    },
   },
   test: {
     projects: [

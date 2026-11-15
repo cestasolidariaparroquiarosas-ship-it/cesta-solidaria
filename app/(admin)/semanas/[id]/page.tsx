@@ -14,14 +14,24 @@ import { eliminarSemanaAccion, guardarSemanaAccion } from "../acciones";
 import { FormularioEliminar, FormularioSemana } from "../formularios";
 import { EstadoSemanaEtiqueta } from "../estado-semana";
 import { Aviso, Volver } from "../../_ui/aviso";
+import { Envio } from "./_envio/seguimiento";
 import { BOTON_PRINCIPAL, BOTON_SECUNDARIO } from "../../_ui/estilos";
 
 export const metadata: Metadata = { title: "Semana · Cesta solidaria" };
+
+// Las acciones de esta página envían los correos de la semana, uno detrás de otro:
+// más tiempo que el que da Vercel por defecto.
+export const maxDuration = 60;
 
 const AVISOS = {
   creada: "Semana creada. Ahora añade las cestas.",
   guardada: "Datos de la semana guardados.",
   cesta_eliminada: "Cesta eliminada.",
+  enviada: "Semana enviada: cada colaborador ha recibido su correo.",
+  enviada_con_fallos: "Semana enviada, pero algunos correos no se han podido enviar. Más abajo puedes volver a intentarlo.",
+  reenviados: "Correos enviados.",
+  reenvio_con_fallos: "Algunos correos siguen sin poder enviarse. Comprueba la configuración del correo.",
+  sustituto: "Sustituto encontrado: ya tiene su correo.",
 };
 
 function personas(adultos: number, ninos: number): string {
@@ -48,7 +58,9 @@ export default async function PaginaSemana({ params, searchParams }: PageProps<"
   }
   if (!etiquetas.ok) throw new Error("No se han podido cargar las etiquetas");
   if (!reparto.ok) throw new Error("No se ha podido cargar el reparto");
-  const colaboradoresEnReparto = reparto.valor.length;
+  const colaboradoresEnReparto = reparto.valor.filter((a) =>
+    ["propuesta", "pendiente", "confirmada"].includes(a.estado),
+  ).length;
   const s = semana.valor;
   const editable = semanaEditable(s);
   const nombreEtiqueta = new Map(etiquetas.valor.map((e) => [e.id, e.nombre]));
@@ -160,9 +172,9 @@ export default async function PaginaSemana({ params, searchParams }: PageProps<"
         </p>
       </section>
 
-      <section className="flex flex-col gap-2 rounded-xl border border-dashed border-stone-300 p-4 text-stone-600">
-        <h2 className="text-lg font-semibold">4. Envío</h2>
-        <p className="text-sm">El envío de los correos y el seguimiento de las respuestas llegarán en la próxima versión.</p>
+      <section id="envio" className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
+        <h2 className="text-lg font-semibold">4. Envío y respuestas</h2>
+        <Envio semana={s} asignaciones={reparto.valor} />
       </section>
 
       {editable && (

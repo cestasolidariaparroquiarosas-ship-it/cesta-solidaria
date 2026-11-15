@@ -4,7 +4,7 @@ import { requerirAdmin } from "@/lib/auth";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { formatearEuros } from "@/lib/dominio/catalogo";
 import { costeCesta } from "@/lib/dominio/cesta";
-import { nombreVisible } from "@/lib/dominio/colaboradores";
+import { esCandidato, nombreVisible } from "@/lib/dominio/colaboradores";
 import { agruparPorAlimento, superaPrecioBase } from "@/lib/dominio/reparto";
 import { candidatosOrdenados, colaboradoresNecesarios } from "@/lib/dominio/seleccion";
 import { semanaEditable } from "@/lib/dominio/semanas";
@@ -44,7 +44,9 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
 
   const s = semana.valor;
   const editable = semanaEditable(s);
-  const asignaciones = reparto.valor;
+  // Con la semana ya enviada, solo las que siguen vivas: las rechazadas o sin respuesta
+  // se ven en el seguimiento de la semana (paso 4).
+  const asignaciones = reparto.valor.filter((a) => ["propuesta", "pendiente", "confirmada"].includes(a.estado));
   const costeTotal = costeCesta(items.valor);
   const necesarios = colaboradoresNecesarios(costeTotal, s.precio_base);
   const disponibles = candidatosOrdenados(candidatos.valor, s.fecha_entrega);
@@ -115,11 +117,19 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
             const nombre = nombreVisible(a.colaborador);
             const gasto = costeCesta(a.items);
             const excede = superaPrecioBase(gasto, s.precio_base);
+            // CA-03: alguien que ya no está disponible (baja, pausa o eliminado) no puede
+            // recibir el correo; enviar_semana lo rechaza.
+            const noDisponible = editable && (!a.colaborador || !esCandidato(a.colaborador, s.fecha_entrega));
             const otros = nombres.filter((n) => n.id !== a.id);
             return (
               <li key={a.id} className="rounded-xl border border-stone-200 bg-white" aria-label={nombre}>
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-stone-200 px-4 py-3">
                   <h2 className="min-w-0 break-words font-semibold">{nombre}</h2>
+                  {noDisponible && (
+                    <p role="alert" className="basis-full text-sm font-medium text-red-800">
+                      Ya no está disponible para esta fecha: cámbialo por otro colaborador antes de enviar.
+                    </p>
+                  )}
                   <p className={`text-sm ${excede ? "font-medium text-amber-800" : "text-stone-600"}`}>
                     {formatearEuros(gasto)}
                     {excede && ` · supera el precio base (${formatearEuros(s.precio_base)})`}

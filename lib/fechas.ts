@@ -102,3 +102,17 @@ export function sumarDias(fecha: string, dias: number): string {
   const [a, m, d] = fecha.split("-").map(Number);
   return new Date(Date.UTC(a, m - 1, d + dias)).toISOString().slice(0, 10);
 }
+
+const fechaLarga = new Intl.DateTimeFormat("es-ES", {
+  timeZone: "UTC",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
+/** "AAAA-MM-DD" → "sábado 21 de noviembre", para los correos. */
+export function formatearFechaLarga(fecha: string): string {
+  const [a, m, d] = fecha.split("-").map(Number);
+  // Intl pone una coma tras el día de la semana ("sábado, 21 de noviembre").
+  return fechaLarga.format(new Date(Date.UTC(a, m - 1, d))).replace(",", "");
+}
