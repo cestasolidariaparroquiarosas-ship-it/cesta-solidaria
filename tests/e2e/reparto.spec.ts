@@ -1,5 +1,5 @@
 import { config } from "dotenv";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { hoyEnMadrid, sumarDias } from "../../lib/fechas";
 import { clienteServicio } from "../utilidades/supabase";
 import { entrarComoAdmin } from "./utilidades";
@@ -100,12 +100,12 @@ async function proponer(page: Page, semana: string) {
   await expect(page.getByRole("status")).toHaveText("Reparto propuesto. Revísalo y cambia lo que haga falta.");
 }
 
-/** Abre el desplegable que contiene el formulario y lo devuelve. */
-async function abrir(page: Page, formulario: string) {
+/** Abre el desplegable que contiene el formulario (dentro de `zona`) y lo devuelve. */
+async function abrir(zona: Page | Locator, formulario: string) {
   // Cerrado, el formulario está oculto y getByRole no lo ve sin includeHidden.
-  const oculto = page.getByRole("form", { name: formulario, includeHidden: true });
-  await page.locator("details", { has: oculto }).locator("summary").click();
-  const form = page.getByRole("form", { name: formulario });
+  const oculto = zona.getByRole("form", { name: formulario, includeHidden: true });
+  await zona.locator("details", { has: oculto }).locator("summary").click();
+  const form = zona.getByRole("form", { name: formulario });
   await expect(form).toBeVisible();
   return form;
 }
@@ -140,7 +140,8 @@ test.describe("reparto en escritorio", () => {
     await expect(tarjeta(page, "Ana")).not.toContainText("supera el precio base");
 
     // Bea pasa su aceite: se queda sin nada y sale del reparto. CA-12: todo sigue asignado.
-    const aceite = await abrir(page, `Mover ${MARCA} Aceite (botella 1 l)`);
+    // Ana y Bea llevan aceite: el de Bea.
+    const aceite = await abrir(tarjeta(page, "Bea"), `Mover ${MARCA} Aceite (botella 1 l)`);
     await aceite.getByLabel("A quién").selectOption({ label: `${MARCA} Ana` });
     await aceite.getByRole("button", { name: "Mover" }).click();
     await expect(page.getByRole("status")).toHaveText("Alimentos movidos. Quien se ha quedado sin nada sale del reparto.");
