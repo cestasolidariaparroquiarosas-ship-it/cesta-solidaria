@@ -32,6 +32,9 @@ const AVISOS = {
   reenviados: "Correos enviados.",
   reenvio_con_fallos: "Algunos correos siguen sin poder enviarse. Comprueba la configuración del correo.",
   sustituto: "Sustituto encontrado: ya tiene su correo.",
+  cerrada: "Semana cerrada: ya está en el histórico.",
+  entregado: "Marcado como entregado.",
+  no_entregado: "Quitada la marca de entregado.",
 };
 
 function personas(adultos: number, ninos: number): string {

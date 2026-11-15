@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [0.9.0] - 2026-11-16
+
+Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 8.
+
+### Añadido
+- **Inicio con resumen** (spec §5.2): la semana en curso (la próxima entrega abierta o, si todas pasaron, la que falta cerrar), con confirmadas, esperando respuesta y no pueden. Avisos de lo que hay que hacer:
+  - Añadir las cestas o preparar el reparto.
+  - Cambiar a quien ya no está disponible.
+  - Cambiar el plazo si ya ha pasado.
+  - Correos que no han salido.
+  - Alimentos sin cubrir.
+  - Cerrar la semana tras la entrega.
+- **Casilla «entregado»** (spec §10, pregunta 6) en cada colaborador confirmado, desde el día de la entrega. Se puede marcar y desmarcar también con la semana cerrada.
+- **Cerrar la semana:** un botón con confirmación desde el día de la entrega. Si nadie la cierra, el cron la cierra solo a los 7 días. Quien siga esperando respuesta queda como «sin respuesta».
+- **Histórico** (spec §5.7, CA-29): las semanas cerradas, con cuántos confirmaron, entregaron y no pudieron. Cada una enlaza a su detalle, que muestra cada colaborador con sus alimentos y su estado final.
+- **Conservación a 12 meses** (spec §10, pregunta 10): el cron cambia el identificador del receptor por «Cesta n.º X» en las semanas cerradas hace más de un año.
+- Migración `20261116000000_cierre_conservacion.sql`:
+  - `cerrar_semana`, que pueden usar el administrador y el cron. Bloquea la semana y exige que esté enviada y que haya llegado la entrega, contando el día en hora de Madrid.
+  - `conservar_doce_meses`, que solo puede ejecutar `service_role`. Se puede repetir sin cambiar nada.
+- CA-28: pruebas e2e a 375 px de Inicio, Histórico y una semana cerrada.
+
 ## [0.8.0] - 2026-11-15
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 7.

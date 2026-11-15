@@ -1,12 +1,19 @@
 import { formatearEuros } from "@/lib/dominio/catalogo";
 import { costeCesta } from "@/lib/dominio/cesta";
 import { esCandidato, nombreVisible } from "@/lib/dominio/colaboradores";
+import { DIAS_PARA_CERRAR } from "@/lib/dominio/inicio";
 import { agruparPorAlimento } from "@/lib/dominio/reparto";
 import type { Semana } from "@/lib/dominio/semanas";
-import { formatearFechaHora } from "@/lib/fechas";
+import { formatearFechaHora, hoyEnMadrid } from "@/lib/fechas";
 import type { AsignacionReparto } from "@/lib/servicios/reparto";
-import { buscarSustitutoAccion, enviarSemanaAccion, reenviarAccion } from "./acciones";
-import { BotonAccion, FormularioEnviar } from "./formularios";
+import {
+  buscarSustitutoAccion,
+  cerrarSemanaAccion,
+  enviarSemanaAccion,
+  marcarEntregadoAccion,
+  reenviarAccion,
+} from "./acciones";
+import { BotonAccion, FormularioCerrar, FormularioEnviar } from "./formularios";
 
 const ESTADOS: Record<AsignacionReparto["estado"], { texto: string; clase: string }> = {
   propuesta: { texto: "Propuesta", clase: "bg-stone-100 text-stone-800" },
@@ -52,9 +59,14 @@ export function Envio({ semana, asignaciones }: { semana: Semana; asignaciones: 
   // Rechazadas o sin respuesta que aún tienen alimentos: nadie los lleva (R4.6).
   const sinCubrir = (a: AsignacionReparto) =>
     (a.estado === "rechazada" || a.estado === "sin_respuesta") && a.items.length > 0;
+  // Desde el día de la entrega: casilla "entregado" y, si sigue enviada, cerrar.
+  const entregaLlegada = semana.fecha_entrega <= hoyEnMadrid();
 
   return (
     <>
+      {semana.estado === "cerrada" && (
+        <p className="text-sm text-stone-600">Semana cerrada: está en el histórico.</p>
+      )}
       <p className="text-sm">
         {confirmadas} confirmada{confirmadas === 1 ? "" : "s"} · {esperando} esperando respuesta · {noPueden}{" "}
         {noPueden === 1 ? "no puede o no respondió" : "no pueden o no respondieron"}
@@ -99,6 +111,21 @@ export function Envio({ semana, asignaciones }: { semana: Semana; asignaciones: 
                       ? `Plazo: ${formatearFechaHora(a.plazo)}`
                       : null}
               </p>
+              {a.estado === "confirmada" && entregaLlegada && (
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
+                  {a.entregado ? (
+                    <span className="font-medium text-emerald-800">Entregado</span>
+                  ) : (
+                    <span className="text-stone-600">Sin marcar como entregado</span>
+                  )}
+                  <BotonAccion
+                    accion={marcarEntregadoAccion.bind(null, semana.id, a.id, !a.entregado)}
+                    texto={a.entregado ? "Deshacer" : "Marcar como entregado"}
+                    textoEnviando="Guardando…"
+                    etiqueta={a.entregado ? `Deshacer entregado de ${nombre}` : `Marcar como entregado: ${nombre}`}
+                  />
+                </div>
+              )}
               {sinCubrir(a) && (
                 <div className="mt-1 flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
                   <p className="font-medium text-amber-950">Sin cubrir: nadie lleva estos alimentos.</p>
@@ -116,6 +143,15 @@ export function Envio({ semana, asignaciones }: { semana: Semana; asignaciones: 
           );
         })}
       </ul>
+      {semana.estado === "enviada" && entregaLlegada && (
+        <div className="flex flex-col gap-2 border-t border-stone-200 pt-3">
+          <h3 className="font-medium">Cerrar la semana</h3>
+          <p className="text-sm text-stone-600">
+            Si nadie la cierra, se cierra sola a los {DIAS_PARA_CERRAR} días de la entrega.
+          </p>
+          <FormularioCerrar accion={cerrarSemanaAccion.bind(null, semana.id)} />
+        </div>
+      )}
     </>
   );
 }

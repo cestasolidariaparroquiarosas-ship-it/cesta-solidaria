@@ -6,7 +6,8 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Correo } from "@/lib/correo/transporte";
-import { hoyEnMadrid } from "@/lib/fechas";
+import { DIAS_PARA_CERRAR } from "@/lib/dominio/inicio";
+import { hoyEnMadrid, sumarDias } from "@/lib/fechas";
 import { enviarPendientes, traducirErrorEnvio } from "./envio";
 import { datosReasignacion, despuesDeReasignar } from "./respuestas";
 
@@ -23,6 +24,10 @@ export type ResumenDiario = {
   fallidos: number;
   /** Lo que no ha dado tiempo a hacer: se hace mañana. */
   pendientesParaManana: number;
+  /** Semanas cerradas solas, a los DIAS_PARA_CERRAR días de la entrega. */
+  semanasCerradas: number;
+  /** Cestas cuyo identificador ha pasado a "Cesta n.º X" (conservación a 12 meses). */
+  cestasConservadas: number;
 };
 
 export async function tareaDiaria(
@@ -44,6 +49,8 @@ export async function tareaDiaria(
     reenviados: 0,
     fallidos: 0,
     pendientesParaManana: 0,
+    semanasCerradas: 0,
+    cestasConservadas: 0,
   };
 
   // 1. CA-27: una consulta, para que Supabase no pause el proyecto por inactividad.
@@ -56,7 +63,38 @@ export async function tareaDiaria(
   const ahora = new Date();
   const hoy = hoyEnMadrid(ahora);
 
-  // 2. R4.5 (CA-20): pendientes con el plazo vencido, de semanas enviadas.
+  // 2. Semanas que nadie ha cerrado a los DIAS_PARA_CERRAR días de la entrega: al
+  //    histórico. Lo que siguiera esperando respuesta queda "sin respuesta".
+  const { data: porCerrar, error: errorPorCerrar } = await servicio
+    .from("semanas")
+    .select("id")
+    .eq("estado", "enviada")
+    .lte("fecha_entrega", sumarDias(hoy, -DIAS_PARA_CERRAR));
+  if (errorPorCerrar) {
+    traducirErrorEnvio(errorPorCerrar);
+    resumen.pendientesParaManana++;
+  }
+  for (const { id } of (porCerrar ?? []) as { id: string }[]) {
+    const { error: errorCerrar } = await servicio.rpc("cerrar_semana", { p_semana_id: id });
+    if (errorCerrar) {
+      traducirErrorEnvio(errorCerrar);
+      resumen.pendientesParaManana++;
+    } else {
+      resumen.semanasCerradas++;
+    }
+  }
+
+  // 3. Conservación a 12 meses (spec §10): el identificador del receptor pasa a
+  //    "Cesta n.º X" en las semanas cerradas hace más de un año.
+  const { data: conservadas, error: errorConservar } = await servicio.rpc("conservar_doce_meses");
+  if (errorConservar) {
+    traducirErrorEnvio(errorConservar);
+    resumen.pendientesParaManana++;
+  } else {
+    resumen.cestasConservadas = conservadas as number;
+  }
+
+  // 4. R4.5 (CA-20): pendientes con el plazo vencido, de semanas enviadas.
   const { data: vencidas, error } = await servicio
     .from("asignaciones")
     .select("id, semana_id, semanas!inner(fecha_entrega, estado)")
@@ -105,7 +143,7 @@ export async function tareaDiaria(
     else resumen.sinSustituto++;
   }
 
-  // 3. Correos que no salieron (plan §4): de semanas enviadas cuya entrega no ha pasado.
+  // 5. Correos que no salieron (plan §4): de semanas enviadas cuya entrega no ha pasado.
   const { data: semanas, error: errorSemanas } = await servicio
     .from("semanas")
     .select("id")
