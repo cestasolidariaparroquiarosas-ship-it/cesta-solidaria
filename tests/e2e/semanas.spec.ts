@@ -80,7 +80,7 @@ test.describe("semanas y cestas en escritorio", () => {
 
     // CA-05: 2 × 1,5 + 1 × 1 = 4 paquetes de arroz.
     const arroz = page.getByRole("form", { name: `Cantidad de ${MARCA} Arroz (paquete 1 kg)` });
-    await expect(arroz.getByLabel("Cantidad")).toHaveValue("4");
+    await expect(arroz.getByLabel("Cantidad", { exact: true })).toHaveValue("4");
     // CA-06: el chorizo no está y se avisa de que se ha quitado.
     await expect(page.getByRole("form", { name: new RegExp(`Cantidad de ${MARCA} Chorizo`) })).toHaveCount(0);
     await expect(page.getByText("No entran por las exclusiones")).toBeVisible();
@@ -89,13 +89,13 @@ test.describe("semanas y cestas en escritorio", () => {
     // CA-07: añadirlo a mano no se guarda.
     const anadir = page.getByRole("form", { name: "Añadir un alimento" });
     await anadir.getByLabel("Alimento").selectOption({ label: `${MARCA} Chorizo (pieza 200 g) · Contiene cerdo` });
-    await anadir.getByLabel("Cantidad").fill("1");
+    await anadir.getByLabel("Cantidad", { exact: true }).fill("1");
     await anadir.getByRole("button", { name: "Añadir a la cesta" }).click();
     await expect(alerta(page, "No se puede añadir: choca con las exclusiones de esta cesta (sin cerdo).")).toBeVisible();
     await expect(page.getByRole("form", { name: new RegExp(`Cantidad de ${MARCA} Chorizo`) })).toHaveCount(0);
 
     // R1.3: cambiar una cantidad.
-    await arroz.getByLabel("Cantidad").fill("5");
+    await arroz.getByLabel("Cantidad", { exact: true }).fill("5");
     await arroz.getByRole("button", { name: /Guardar cantidad/ }).click();
     await expect(page.getByRole("status")).toHaveText("Cantidad guardada.");
     await expect(page.locator("p").filter({ hasText: "Coste de la cesta:" })).toContainText("6,00");
@@ -131,7 +131,7 @@ test.describe("semanas y cestas en escritorio", () => {
     await expect(page.getByText("La cesta no tiene alimentos.")).toBeVisible();
     const anadir = page.getByRole("form", { name: "Añadir un alimento" });
     await anadir.getByLabel("Alimento").selectOption({ label: `${MARCA} Arroz (paquete 1 kg)` });
-    await anadir.getByLabel("Cantidad").fill("2");
+    await anadir.getByLabel("Cantidad", { exact: true }).fill("2");
     await anadir.getByRole("button", { name: "Añadir a la cesta" }).click();
     await expect(page.getByRole("status")).toHaveText("Alimento añadido.");
     await page.getByRole("button", { name: `Quitar ${MARCA} Arroz (paquete 1 kg)` }).click();
