@@ -226,7 +226,7 @@ Todas las tablas tienen `id` (uuid), `creado_en` y `actualizado_en`.
 > - La consulta diaria a pruebas la hace `mantener-activo.yml`.
 > - Para CA-34, la restauración se comprueba **cada día** en un Supabase desechable y no en `cesta-pruebas`, para no dejar allí datos personales reales.
 >
-> Detalles en `trazabilidad.md`. **Pendiente de la aprobación del responsable.**
+> Detalles en `trazabilidad.md`. **Aprobado por el responsable el 2026-11-15.**
 
 ### Puesta en marcha (una sola vez)
 

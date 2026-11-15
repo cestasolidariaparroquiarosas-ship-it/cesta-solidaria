@@ -62,4 +62,4 @@ Los pasos de restauración son los mismos que los de `docs/operacion.md`. La pil
 
 Primera ejecución correcta: 2026-11-15. Las anteriores encontraron dos problemas del procedimiento de restauración, ya corregidos:
 - Una tabla interna de Storage no se podía restaurar. La app no usa Storage, y desde entonces no se copia.
-- Supabase daba permisos por defecto de más a `anon` y `authenticated` sobre lo restaurado. Ahora se quitan antes con `scripts/preparar-restauracion.sql`. El cambio respecto al spec está anotado en su §7.
+- Supabase daba permisos por defecto de más a `anon` y `authenticated` sobre lo restaurado. Ahora se quitan antes con `scripts/preparar-restauracion.sql`. El cambio respecto al spec está anotado en su §7, aprobado por el responsable el 2026-11-15.
