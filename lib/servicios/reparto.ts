@@ -86,21 +86,30 @@ export async function listarCandidatos(cliente: SupabaseClient): Promise<Resulta
 // Reparto
 // ---------------------------------------------------------------------------
 
-/** Todos los alimentos de todas las cestas de la semana: lo que hay que repartir. */
+/**
+ * Todos los alimentos de todas las cestas de la semana: lo que hay que repartir.
+ * Se lee por cestas: PostgREST devuelve como mucho 1000 filas (max_rows) de la tabla
+ * principal, y una semana tiene pocas cestas aunque sume muchos alimentos.
+ */
 export async function itemsDeSemana(cliente: SupabaseClient, semanaId: string): Promise<Resultado<ItemRepartible[]>> {
   if (!UUID.test(semanaId)) return fallo("no_encontrado");
   const { data, error } = await cliente
-    .from("cesta_items")
-    .select("id, alimento_id, cantidad, precio_unitario, cestas!inner(semana_id)")
-    .eq("cestas.semana_id", semanaId);
+    .from("cestas")
+    .select("cesta_items(id, alimento_id, cantidad, precio_unitario)")
+    .eq("semana_id", semanaId);
   if (error) return fallo(traducirError(error));
+  const cestas = data as unknown as {
+    cesta_items: { id: string; alimento_id: string; cantidad: number; precio_unitario: number | string }[];
+  }[];
   return ok(
-    (data as unknown as { id: string; alimento_id: string; cantidad: number; precio_unitario: number | string }[]).map((i) => ({
-      cesta_item_id: i.id,
-      alimento_id: i.alimento_id,
-      cantidad: i.cantidad,
-      precio_unitario: Number(i.precio_unitario),
-    })),
+    cestas.flatMap((c) =>
+      c.cesta_items.map((i) => ({
+        cesta_item_id: i.id,
+        alimento_id: i.alimento_id,
+        cantidad: i.cantidad,
+        precio_unitario: Number(i.precio_unitario),
+      })),
+    ),
   );
 }
 
@@ -184,10 +193,12 @@ export async function proponerReparto(
  */
 export async function moverEnReparto(
   cliente: SupabaseClient,
+  semanaId: string,
   m: { origen: string; destino: string; alimentoId: string; unidad: string; cantidad: number },
 ): Promise<Resultado<{ origenEliminado: boolean }>> {
-  if (![m.origen, m.destino, m.alimentoId].every((id) => UUID.test(id))) return fallo("no_encontrado");
+  if (![semanaId, m.origen, m.destino, m.alimentoId].every((id) => UUID.test(id))) return fallo("no_encontrado");
   const { data, error } = await cliente.rpc("mover_en_reparto", {
+    p_semana_id: semanaId,
     p_origen: m.origen,
     p_destino: m.destino,
     p_alimento_id: m.alimentoId,

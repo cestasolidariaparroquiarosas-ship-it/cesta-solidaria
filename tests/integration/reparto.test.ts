@@ -249,11 +249,16 @@ describe("selección y reparto", () => {
       const b = (await asignacion(col.B))!;
 
       const mover = (origen: string, destino: string, cantidad: number) =>
-        moverEnReparto(admin, { origen, destino, alimentoId: arroz, unidad: "paquete 1 kg", cantidad });
+        moverEnReparto(admin, id, { origen, destino, alimentoId: arroz, unidad: "paquete 1 kg", cantidad });
       expect(await mover(b.id, a.id, 2)).toEqual({ ok: true, valor: { origenEliminado: false } });
       expect((await asignacion(col.A))?.items.find((i) => i.alimento_id === arroz)?.cantidad).toBe(2);
       expect(await mover(b.id, a.id, 3)).toEqual({ ok: false, error: "cantidad_insuficiente" });
       expect(await mover(b.id, b.id, 1)).toEqual({ ok: false, error: "mismo_colaborador" });
+      // Con la semana de otra URL, no se encuentra.
+      const otra = await semana();
+      expect(
+        await moverEnReparto(admin, otra, { origen: b.id, destino: a.id, alimentoId: arroz, unidad: "paquete 1 kg", cantidad: 1 }),
+      ).toEqual({ ok: false, error: "no_encontrado" });
 
       // Cambiar a A por C; y a C por B no se puede: B ya está.
       expect(await cambiarColaborador(admin, id, a.id, col.C)).toEqual({ ok: true, valor: undefined });
@@ -296,14 +301,14 @@ describe("selección y reparto", () => {
       expect(b).toBeDefined();
       await servicio.from("semanas").update({ estado: "enviada" }).eq("id", id);
       expect(await proponerReparto(admin, id, [])).toEqual({ ok: false, error: "no_editable" });
-      const movido = await moverEnReparto(admin, {
+      const movido = await moverEnReparto(admin, id, {
         origen: a.id,
         destino: b.id,
         alimentoId: arroz,
         unidad: "paquete 1 kg",
         cantidad: 1,
       });
-      expect(movido.ok).toBe(false);
+      expect(movido).toEqual({ ok: false, error: "no_editable" });
     });
   });
 

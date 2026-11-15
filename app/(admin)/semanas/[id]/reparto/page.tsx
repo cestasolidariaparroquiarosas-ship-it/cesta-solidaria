@@ -77,7 +77,7 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
           <dt className="text-stone-600">Disponibles</dt>
           <dd>{disponibles.length}</dd>
         </dl>
-        {faltan > 0 && costeTotal > 0 && (
+        {editable && faltan > 0 && costeTotal > 0 && (
           <p role="alert" className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-950">
             Hacen falta {necesarios} colaboradores y solo hay {disponibles.length} disponibles: el gasto de cada uno
             superará el precio base.
@@ -146,7 +146,7 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
                                 unidad: l.unidad,
                                 cantidad: l.cantidad,
                               })}
-                              nombre={texto}
+                              nombre={`${texto} de ${nombre}`}
                               cantidad={l.cantidad}
                               destinos={otros}
                             />

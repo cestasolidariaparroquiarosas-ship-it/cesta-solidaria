@@ -139,7 +139,7 @@ export async function moverAccion(
   if (!cantidad.ok) errores.cantidad = cantidad.error;
   if (Object.keys(errores).length || !cantidad.ok) return { errores, valores };
 
-  const resultado = await moverEnReparto(await crearClienteServidor(), {
+  const resultado = await moverEnReparto(await crearClienteServidor(), semanaId, {
     origen,
     destino: valores.destino,
     alimentoId: linea.alimentoId,

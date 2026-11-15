@@ -26,6 +26,10 @@ Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-ces
   - Vista `ultimas_participaciones` (`security_invoker`): la última participación agregada en la base de datos. La usan la selección y la lista de colaboradores.
   - `proponer_reparto` y `mover_en_reparto`: guardan los cambios de una vez, bloquean la semana (`FOR UPDATE`) y comprueban al final que cada unidad de cada cesta está asignada exactamente una vez (CA-12). Si no, no se guarda nada.
 
+### Revisión independiente
+- [Informe](docs/sdlc/0001-cesta-v1/revision-pr5.md): 1 hallazgo alto (en las pruebas e2e), 1 medio y 4 menores, todos corregidos. El medio: el disparador que descarta el reparto no bloqueaba la semana antes de borrar, y un cambio de cesta simultáneo a una propuesta podía dejar el reparto desfasado.
+- En la pantalla del móvil, los desplegables con nombres largos ensanchaban la página; ahora se recortan (CA-28).
+
 ### Pendientes resueltos
 - **De la 0.5.0, cambiar una cesta después de proponer el reparto:** el reparto propuesto se descarta (disparador en `cesta_items` y `cestas`). La cesta y el alta de cestas avisan antes de que pase, y volver a proponerlo es un clic.
 - **De la 0.3.0, última participación con más de 1000 asignaciones:** ahora sale de la vista agregada.
@@ -36,7 +40,7 @@ Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-ces
 - Si un colaborador se elimina definitivamente con un reparto propuesto, su asignación aparece como "Colaborador eliminado" y se puede cambiar por otro. La app ya no deja eliminarlo en ese caso (versión 0.3.0); solo pasaría si se hace a la vez desde dos pestañas.
 
 ### Pendiente para el PR 6
-- "Enviar" pasa la semana a `enviada` con `SELECT ... FOR UPDATE` (las funciones del reparto ya bloquean igual) y no debe enviar asignaciones sin colaborador.
+- "Enviar" pasa la semana a `enviada` con `SELECT ... FOR UPDATE` (las funciones del reparto ya bloquean igual), llama a `privado.comprobar_reparto_completo` antes de enviar y no envía asignaciones sin colaborador.
 
 ## [0.5.0] - 2026-11-15
 

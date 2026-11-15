@@ -126,6 +126,11 @@ begin
 
   -- Sin semana (se está borrando en cascada), no hay nada que descartar.
   if v_semana is not null then
+    -- Primero se bloquea la semana (FOR SHARE), como hace el disparador de "solo en
+    -- preparación". Si no, un proponer_reparto a medias, que la tiene en FOR UPDATE,
+    -- dejaría su reparto sin descartar (el borrado no vería sus filas), o los dos se
+    -- interbloquearían.
+    perform privado.exigir_semana_en_preparacion(v_semana);
     delete from public.asignaciones where semana_id = v_semana and estado = 'propuesta';
   end if;
 
@@ -192,10 +197,12 @@ grant execute on function public.proponer_reparto(uuid, jsonb) to authenticated;
 -- 5. Mover unidades de un alimento de un colaborador a otro (R3.5).
 --    Se mueve por alimento y unidad (como se muestra), tomando de las cestas en orden.
 --    Si el origen se queda sin nada, sale del reparto: no recibiría un correo vacío.
+--    El origen y el destino tienen que ser de la semana p_semana_id.
 --    Devuelve {"origen_eliminado": true|false}.
 -- ---------------------------------------------------------------------------
 
 create function public.mover_en_reparto(
+  p_semana_id uuid,
   p_origen uuid,
   p_destino uuid,
   p_alimento_id uuid,
@@ -208,7 +215,6 @@ security invoker
 set search_path = ''
 as $$
 declare
-  v_semana uuid;
   v_quedan integer := p_cantidad;
   v_fila record;
   v_toma integer;
@@ -221,16 +227,14 @@ begin
     raise exception 'El origen y el destino son el mismo' using errcode = 'check_violation', hint = 'mismo_colaborador';
   end if;
 
-  select a.semana_id into v_semana from public.asignaciones a where a.id = p_origen and a.estado = 'propuesta';
-  if v_semana is null
-     or not exists (
-       select 1 from public.asignaciones a
-       where a.id = p_destino and a.semana_id = v_semana and a.estado = 'propuesta'
-     ) then
+  -- Primero el bloqueo: así, si a la vez se vuelve a proponer el reparto, esto espera
+  -- y después ve que el origen o el destino ya no existen.
+  perform privado.bloquear_semana_en_preparacion(p_semana_id);
+
+  if (select count(*) from public.asignaciones a
+      where a.id in (p_origen, p_destino) and a.semana_id = p_semana_id and a.estado = 'propuesta') <> 2 then
     raise exception 'Asignación no encontrada' using errcode = 'no_data_found';
   end if;
-
-  perform privado.bloquear_semana_en_preparacion(v_semana);
 
   for v_fila in
     select ai.id, ai.cesta_item_id, ai.cantidad
@@ -266,10 +270,10 @@ begin
     v_origen_eliminado := true;
   end if;
 
-  perform privado.comprobar_reparto_completo(v_semana);
+  perform privado.comprobar_reparto_completo(p_semana_id);
   return jsonb_build_object('origen_eliminado', v_origen_eliminado);
 end;
 $$;
 
-revoke all on function public.mover_en_reparto(uuid, uuid, uuid, text, integer) from public, anon;
-grant execute on function public.mover_en_reparto(uuid, uuid, uuid, text, integer) to authenticated;
+revoke all on function public.mover_en_reparto(uuid, uuid, uuid, uuid, text, integer) from public, anon;
+grant execute on function public.mover_en_reparto(uuid, uuid, uuid, uuid, text, integer) to authenticated;

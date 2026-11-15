@@ -1,8 +1,8 @@
 import { config } from "dotenv";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { hoyEnMadrid, sumarDias } from "../../lib/fechas";
 import { clienteServicio } from "../utilidades/supabase";
-import { entrarComoAdmin } from "./utilidades";
+import { alerta, entrarComoAdmin } from "./utilidades";
 
 // Selección y reparto (plan PR 5, R2 y R3). Escriben datos: solo contra Supabase local.
 test.skip(Boolean(process.env.BASE_URL), "Solo contra Supabase local");
@@ -59,7 +59,7 @@ test.afterAll(async () => {
  * con 20 € de precio base hacen falta 2 colaboradores. El reparto de R3 queda así:
  * Ana, 2 aceites (15 €); Bea, 1 aceite y 4 arroces (12,30 €).
  */
-async function semanaConCesta() {
+async function semanaConCesta(aceites = 3) {
   const s = clienteServicio();
   const fecha = sumarDias(hoyEnMadrid(), 30 + Math.floor(Math.random() * 3000));
   const semana = comprobar(
@@ -81,7 +81,7 @@ async function semanaConCesta() {
     await s
       .from("cesta_items")
       .insert([
-        { cesta_id: cesta.id, alimento_id: alimentos.Aceite, cantidad: 3 },
+        { cesta_id: cesta.id, alimento_id: alimentos.Aceite, cantidad: aceites },
         { cesta_id: cesta.id, alimento_id: alimentos.Arroz, cantidad: 4 },
       ])
       .select(),
@@ -100,12 +100,12 @@ async function proponer(page: Page, semana: string) {
   await expect(page.getByRole("status")).toHaveText("Reparto propuesto. Revísalo y cambia lo que haga falta.");
 }
 
-/** Abre el desplegable que contiene el formulario (dentro de `zona`) y lo devuelve. */
-async function abrir(zona: Page | Locator, formulario: string) {
+/** Abre el desplegable que contiene el formulario y lo devuelve. */
+async function abrir(page: Page, formulario: string) {
   // Cerrado, el formulario está oculto y getByRole no lo ve sin includeHidden.
-  const oculto = zona.getByRole("form", { name: formulario, includeHidden: true });
-  await zona.locator("details", { has: oculto }).locator("summary").click();
-  const form = zona.getByRole("form", { name: formulario });
+  const oculto = page.getByRole("form", { name: formulario, includeHidden: true });
+  await page.locator("details", { has: oculto }).locator("summary").click();
+  const form = page.getByRole("form", { name: formulario });
   await expect(form).toBeVisible();
   return form;
 }
@@ -130,7 +130,7 @@ test.describe("reparto en escritorio", () => {
     await expect(tarjeta(page, "Bea")).toContainText("12,30");
 
     // R3.5: mover los 4 arroces de Bea a Ana (19,80 €).
-    const mover = await abrir(page, `Mover ${MARCA} Arroz (paquete 1 kg)`);
+    const mover = await abrir(page, `Mover ${MARCA} Arroz (paquete 1 kg) de ${MARCA} Bea`);
     await mover.getByLabel("Unidades").fill("4");
     await mover.getByLabel("A quién").selectOption({ label: `${MARCA} Ana` });
     await mover.getByRole("button", { name: "Mover" }).click();
@@ -140,8 +140,7 @@ test.describe("reparto en escritorio", () => {
     await expect(tarjeta(page, "Ana")).not.toContainText("supera el precio base");
 
     // Bea pasa su aceite: se queda sin nada y sale del reparto. CA-12: todo sigue asignado.
-    // Ana y Bea llevan aceite: el de Bea.
-    const aceite = await abrir(tarjeta(page, "Bea"), `Mover ${MARCA} Aceite (botella 1 l)`);
+    const aceite = await abrir(page, `Mover ${MARCA} Aceite (botella 1 l) de ${MARCA} Bea`);
     await aceite.getByLabel("A quién").selectOption({ label: `${MARCA} Ana` });
     await aceite.getByRole("button", { name: "Mover" }).click();
     await expect(page.getByRole("status")).toHaveText("Alimentos movidos. Quien se ha quedado sin nada sale del reparto.");
@@ -176,6 +175,20 @@ test.describe("reparto en escritorio", () => {
     await expect(page.getByText("Esta semana ya tiene un reparto propuesto.")).toHaveCount(0);
     await page.goto(`/semanas/${semana}`);
     await expect(page.getByText("Todavía no hay reparto.")).toBeVisible();
+  });
+});
+
+test.describe("aviso de falta de colaboradores", () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 1280) < 768, "Solo en escritorio");
+
+  test("CA-13: si hay menos candidatos que los necesarios, se avisa antes de proponer", async ({ page }) => {
+    // 999 aceites y 4 arroces: 7.497,30 € → 375 colaboradores, más de los que hay en cualquier caso.
+    // No se propone el reparto: elegiría también a los colaboradores de otras pruebas.
+    const { semana } = await semanaConCesta(999);
+    await entrarComoAdmin(page);
+    await page.goto(`/semanas/${semana}/reparto`);
+    await expect(alerta(page, "Hacen falta 375 colaboradores")).toBeVisible();
+    await expect(alerta(page, "el gasto de cada uno superará el precio base")).toBeVisible();
   });
 });
 

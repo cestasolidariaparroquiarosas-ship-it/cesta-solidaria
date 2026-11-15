@@ -38,7 +38,7 @@ export function FormularioMover({
   destinos,
 }: {
   accion: Accion;
-  /** "Arroz (paquete 1 kg)", para las etiquetas accesibles. */
+  /** "Arroz (paquete 1 kg) de Ana", para que cada formulario tenga un nombre accesible distinto. */
   nombre: string;
   cantidad: number;
   destinos: { id: string; nombre: string }[];
