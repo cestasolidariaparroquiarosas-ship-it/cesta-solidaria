@@ -1,0 +1,83 @@
+# Datos de prueba (iteración 0002, docs/sdlc/0002-datos-de-prueba/).
+# Solo a mano: Actions → datos-de-prueba → Run workflow.
+#   cargar: solo en una base sin datos de la app (RD1), todo o nada (RD2).
+#   borrar: deja vacías las tablas de la app salvo las etiquetas; se niega si hay algún
+#           colaborador que no sea de prueba (RD3). En producción hay que escribir
+#           BORRAR PRODUCCION en "confirmacion".
+# El registro solo muestra recuentos (RD4). Los secretos van por env: (RD5).
+name: datos-de-prueba
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "Qué hacer"
+        type: choice
+        options: [cargar, borrar]
+        required: true
+      entorno:
+        description: "Dónde"
+        type: choice
+        options: [pruebas, produccion]
+        required: true
+      confirmacion:
+        description: "Para borrar en producción, escribe: BORRAR PRODUCCION"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# Su propia cola por entorno. No comparte la de deploy: en GitHub, una ejecución que
+# espera en un grupo se cancela cuando llega otra, y podría cancelar un despliegue.
+concurrency:
+  group: datos-de-prueba-${{ inputs.entorno }}
+  cancel-in-progress: false
+
+jobs:
+  datos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Confirmación para borrar en producción
+        if: inputs.accion == 'borrar' && inputs.entorno == 'produccion'
+        env:
+          CONFIRMACION: ${{ inputs.confirmacion }}
+        run: |
+          [ "$CONFIRMACION" = "BORRAR PRODUCCION" ] || {
+            echo "::error::Para borrar en producción, escribe BORRAR PRODUCCION en «confirmacion»"; exit 1; }
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Elegir la base de datos
+        env:
+          ENTORNO: ${{ inputs.entorno }}
+          URL_PRODUCCION: ${{ secrets.SUPABASE_PROD_DB_URL }}
+          URL_PRUEBAS: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+          DEMO_CORREO_BASE: ${{ secrets.DEMO_CORREO_BASE }}
+        run: |
+          [ -n "$DEMO_CORREO_BASE" ] || { echo "::error::Falta el secreto DEMO_CORREO_BASE (Gmail de la cesta)"; exit 1; }
+          case "$ENTORNO" in
+            produccion) URL="$URL_PRODUCCION"; SECRETO=SUPABASE_PROD_DB_URL ;;
+            pruebas) URL="$URL_PRUEBAS"; SECRETO=SUPABASE_STAGING_DB_URL ;;
+            *) echo "::error::Entorno desconocido"; exit 1 ;;
+          esac
+          [ -n "$URL" ] || { echo "::error::Falta el secreto $SECRETO"; exit 1; }
+          echo "::add-mask::$URL"
+          echo "DB_URL=$URL" >> "$GITHUB_ENV"
+
+      - name: ${{ inputs.accion }} en ${{ inputs.entorno }}
+        env:
+          DEMO_CORREO_BASE: ${{ secrets.DEMO_CORREO_BASE }}
+          ACCION: ${{ inputs.accion }}
+        run: npm run datos-de-prueba -- "$ACCION"
+
+      - name: RLS y permisos siguen bien
+        run: psql "$DB_URL" --variable ON_ERROR_STOP=1 --quiet --file scripts/comprobar-rls.sql

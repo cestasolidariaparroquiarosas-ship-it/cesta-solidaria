@@ -80,6 +80,30 @@ Viven en el repositorio **privado** `cesta-copias`, no en este: los artefactos d
   - Ha cambiado la contraseña de la base de datos: actualiza `SUPABASE_PROD_DB_URL` en `cesta-copias` (y en este repositorio).
   - Supabase ha cambiado sus tablas internas (`auth`), y el Supabase desechable va por detrás. Si el error es *column … does not exist* o *permission denied* en `auth`, sube la versión `SUPABASE_CLI` de `copia.yml`.
 
+## Datos de prueba
+
+Datos inventados para que los administradores conozcan la app antes de cargar los reales (iteración 0002, `docs/sdlc/0002-datos-de-prueba/`):
+- 44 alimentos de la cesta tipo y su lista base (etiquetas orientativas);
+- 45 colaboradores;
+- 8 familias;
+- 3 semanas cerradas, 1 enviada y 1 en preparación.
+
+- **Requisito:** el secreto `DEMO_CORREO_BASE` en GitHub, con la Gmail de la cesta. Los colaboradores de prueba tienen alias `usuario+demoNN@…`: todo lo que se les envía llega a esa bandeja.
+- **Cargar:** Actions → datos-de-prueba → Run workflow → `cargar` y el entorno. Solo funciona si la base no tiene datos de la app. Las fechas son relativas al día de la carga.
+- **No metas nada real** (alimentos, listas, cestas) mientras estén los datos de prueba: el borrado lo eliminaría.
+- **Borrar** (antes de cargar los datos reales): igual, con `borrar`. En producción, escribe `BORRAR PRODUCCION` en «confirmacion».
+  - Deja vacías las tablas de la app salvo las etiquetas de exclusión, y no toca las cuentas de administrador.
+  - Se niega si hay algún colaborador que no sea de prueba. Si un administrador se dio de alta con su correo real para probar, primero hay que eliminarlo («Eliminar definitivamente») y después repetir el borrado.
+- **Después de cargar**, la tarea diaria trata la semana enviada (la de entrega dentro de 5 días) como cualquier otra. Si nadie contesta a los correos que lleguen a la Gmail de la cesta:
+  - **A los 3 días:** pasa a "sin respuesta" a los 4 que esperan y escribe a sus sustitutos.
+  - **El día de la entrega:** si los sustitutos tampoco han contestado, manda un aviso a `ADMIN_EMAIL` por cada uno sin cubrir, e Inicio lo muestra.
+  - **A los 12 días:** cierra la semana.
+
+  Para verlo funcionar sin avisos, contesta desde los enlaces de esos correos.
+- **Gmail y los alias:** un correo que la cuenta se envía a sí misma (a `usuario+demoNN@…`) puede aparecer en «Enviados» y no en la bandeja de entrada. Si no lo ves en la bandeja, búscalo con `to:usuario+demo`.
+- El registro del workflow solo muestra recuentos por tabla.
+- El workflow tiene su propia cola por entorno: no espera a los despliegues ni los cancela. Lanzarlo dos veces seguidas sobre el mismo entorno las pone en fila.
+
 ## Volver a una versión anterior
 
 - **La última publicación falla:** en Vercel, Instant Rollback (o `vercel rollback`). El plan gratuito solo permite volver a la versión inmediatamente anterior.
