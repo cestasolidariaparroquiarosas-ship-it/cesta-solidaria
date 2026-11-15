@@ -55,22 +55,6 @@ export function nombreVisible(colaborador: { nombre: string } | null | undefined
   return colaborador?.nombre ?? COLABORADOR_ELIMINADO;
 }
 
-/**
- * Última participación (spec §3): la fecha de entrega más reciente de una semana en
- * la que el colaborador tuvo una asignación confirmada. Recibe solo las confirmadas.
- */
-export function ultimasParticipaciones(
-  confirmadas: { colaborador_id: string | null; fecha_entrega: string }[],
-): Map<string, string> {
-  const ultimas = new Map<string, string>();
-  for (const { colaborador_id, fecha_entrega } of confirmadas) {
-    if (!colaborador_id) continue;
-    const actual = ultimas.get(colaborador_id);
-    if (!actual || fecha_entrega > actual) ultimas.set(colaborador_id, fecha_entrega);
-  }
-  return ultimas;
-}
-
 // ---------------------------------------------------------------------------
 // Validación de los formularios
 // ---------------------------------------------------------------------------

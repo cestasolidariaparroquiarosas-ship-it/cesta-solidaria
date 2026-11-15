@@ -3,6 +3,41 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [0.6.0] - 2026-11-15
+
+Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 5.
+
+### Añadido
+- **Selección de colaboradores (R2)**, en `lib/dominio/seleccion.ts`:
+  - Hacen falta N = coste total / precio base, redondeado hacia arriba y contando en céntimos (CA-09).
+  - Son candidatos los activos y los pausados cuya pausa termina antes de la entrega (CA-02, CA-03).
+  - Se eligen primero quienes nunca han participado, después los que llevan más tiempo sin hacerlo y, a igualdad, quien se dio de alta antes (CA-10).
+  - Si hay menos candidatos que N, se usan todos y la pantalla avisa de que su gasto superará el precio base (CA-13).
+- **Reparto equilibrado (R3)**, en `lib/dominio/reparto.ts`: cada unidad es una pieza; de la más cara a la más barata, cada pieza va a quien menos lleva y, si hay empate, a quien ya lleva ese alimento.
+  - Pruebas de propiedades con 500 semanas al azar: la diferencia de gasto nunca supera la pieza más cara (CA-11) y cada unidad se asigna exactamente una vez (CA-12).
+  - Quien no recibe nada no entra en el reparto, para no mandarle un correo vacío.
+- **Pantalla de reparto** (`/semanas/[id]/reparto`, paso 3):
+  - Resumen con el coste, el precio base, cuántos colaboradores hacen falta y cuántos hay disponibles.
+  - Lo que lleva cada colaborador, con el mismo alimento de distintas cestas sumado, y su gasto. Si supera el precio base, se avisa pero se permite (R3.5).
+  - Mover unidades de un alimento a otro colaborador. Quien se queda sin nada sale del reparto.
+  - Cambiar un colaborador por otro candidato, con su última participación a la vista.
+  - Volver a proponer el reparto, con confirmación porque se pierden los cambios hechos a mano.
+- Migración `20261115180000_reparto.sql`:
+  - Vista `ultimas_participaciones` (`security_invoker`): la última participación agregada en la base de datos. La usan la selección y la lista de colaboradores.
+  - `proponer_reparto` y `mover_en_reparto`: guardan los cambios de una vez, bloquean la semana (`FOR UPDATE`) y comprueban al final que cada unidad de cada cesta está asignada exactamente una vez (CA-12). Si no, no se guarda nada.
+
+### Pendientes resueltos
+- **De la 0.5.0, cambiar una cesta después de proponer el reparto:** el reparto propuesto se descarta (disparador en `cesta_items` y `cestas`). La cesta y el alta de cestas avisan antes de que pase, y volver a proponerlo es un clic.
+- **De la 0.3.0, última participación con más de 1000 asignaciones:** ahora sale de la vista agregada.
+
+### Notas de diseño
+- Se mueve por alimento y unidad, como se muestra, tomando de las cestas en orden: al colaborador le da igual de qué cesta sale cada paquete.
+- Las cestas siguen ligadas a cada unidad repartida (`asignacion_items` apunta a `cesta_items`), así que el histórico sabe de qué cesta salió cada cosa.
+- Si un colaborador se elimina definitivamente con un reparto propuesto, su asignación aparece como "Colaborador eliminado" y se puede cambiar por otro. La app ya no deja eliminarlo en ese caso (versión 0.3.0); solo pasaría si se hace a la vez desde dos pestañas.
+
+### Pendiente para el PR 6
+- "Enviar" pasa la semana a `enviada` con `SELECT ... FOR UPDATE` (las funciones del reparto ya bloquean igual) y no debe enviar asignaciones sin colaborador.
+
 ## [0.5.0] - 2026-11-15
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 4.

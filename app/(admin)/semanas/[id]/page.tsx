@@ -8,12 +8,13 @@ import { textoSin } from "@/lib/dominio/cesta";
 import { semanaEditable } from "@/lib/dominio/semanas";
 import { fechaHoraEnMadrid, formatearFecha, formatearFechaHora, hoyEnMadrid } from "@/lib/fechas";
 import { listarEtiquetas } from "@/lib/servicios/catalogo";
+import { obtenerReparto } from "@/lib/servicios/reparto";
 import { obtenerSemana } from "@/lib/servicios/semanas";
 import { eliminarSemanaAccion, guardarSemanaAccion } from "../acciones";
 import { FormularioEliminar, FormularioSemana } from "../formularios";
 import { EstadoSemanaEtiqueta } from "../estado-semana";
 import { Aviso, Volver } from "../../_ui/aviso";
-import { BOTON_PRINCIPAL } from "../../_ui/estilos";
+import { BOTON_PRINCIPAL, BOTON_SECUNDARIO } from "../../_ui/estilos";
 
 export const metadata: Metadata = { title: "Semana · Cesta solidaria" };
 
@@ -36,12 +37,18 @@ export default async function PaginaSemana({ params, searchParams }: PageProps<"
   const { aviso } = await searchParams;
 
   const cliente = await crearClienteServidor();
-  const [semana, etiquetas] = await Promise.all([obtenerSemana(cliente, id), listarEtiquetas(cliente)]);
+  const [semana, etiquetas, reparto] = await Promise.all([
+    obtenerSemana(cliente, id),
+    listarEtiquetas(cliente),
+    obtenerReparto(cliente, id),
+  ]);
   if (!semana.ok) {
     if (semana.error === "no_encontrado") notFound();
     throw new Error("No se ha podido cargar la semana");
   }
   if (!etiquetas.ok) throw new Error("No se han podido cargar las etiquetas");
+  if (!reparto.ok) throw new Error("No se ha podido cargar el reparto");
+  const colaboradoresEnReparto = reparto.valor.length;
   const s = semana.valor;
   const editable = semanaEditable(s);
   const nombreEtiqueta = new Map(etiquetas.valor.map((e) => [e.id, e.nombre]));
@@ -132,12 +139,30 @@ export default async function PaginaSemana({ params, searchParams }: PageProps<"
         )}
       </section>
 
-      <section className="flex flex-col gap-2 rounded-xl border border-dashed border-stone-300 p-4 text-stone-600">
-        <h2 className="text-lg font-semibold">3. Reparto y 4. Envío</h2>
-        <p className="text-sm">
-          La elección de colaboradores, el reparto de los alimentos y el envío de los correos llegarán
-          en las próximas versiones.
+      <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">3. Reparto</h2>
+          {(colaboradoresEnReparto > 0 || (editable && s.cestas.length > 0)) && (
+            <Link
+              href={`/semanas/${s.id}/reparto`}
+              className={colaboradoresEnReparto > 0 ? BOTON_SECUNDARIO : BOTON_PRINCIPAL}
+            >
+              {colaboradoresEnReparto > 0 ? "Ver el reparto" : "Preparar el reparto"}
+            </Link>
+          )}
+        </div>
+        <p className="text-sm text-stone-600">
+          {colaboradoresEnReparto > 0
+            ? `${colaboradoresEnReparto} colaborador${colaboradoresEnReparto === 1 ? "" : "es"} con alimentos asignados.`
+            : s.cestas.length > 0
+              ? "Todavía no hay reparto."
+              : "Primero añade las cestas."}
         </p>
+      </section>
+
+      <section className="flex flex-col gap-2 rounded-xl border border-dashed border-stone-300 p-4 text-stone-600">
+        <h2 className="text-lg font-semibold">4. Envío</h2>
+        <p className="text-sm">El envío de los correos y el seguimiento de las respuestas llegarán en la próxima versión.</p>
       </section>
 
       {editable && (

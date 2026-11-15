@@ -9,12 +9,7 @@
 // `details`), así que se tratan por `code` y nunca se devuelven ni se registran enteros.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  ultimasParticipaciones,
-  type Colaborador,
-  type DatosColaborador,
-  type EstadoColaborador,
-} from "@/lib/dominio/colaboradores";
+import type { Colaborador, DatosColaborador, EstadoColaborador } from "@/lib/dominio/colaboradores";
 
 export type ErrorColaborador =
   | "email_repetido"
@@ -56,21 +51,17 @@ export async function listarColaboradores(
   const { data, error } = await consulta;
   if (error) return fallo(traducirError(error));
 
-  // Límite conocido: PostgREST devuelve como mucho max_rows (1000) filas sin avisar.
-  // Con unas 5-10 confirmaciones por semana alcanza para años, pero la selección de
-  // R2.4 (PR 5) debe usar una vista agregada (max(fecha_entrega) por colaborador),
-  // y esta lista también.
-  const { data: confirmadas, error: errorConfirmadas } = await cliente
-    .from("asignaciones")
-    .select("colaborador_id, semanas!inner(fecha_entrega)")
-    .eq("estado", "confirmada")
-    .not("colaborador_id", "is", null);
-  if (errorConfirmadas) return fallo(traducirError(errorConfirmadas));
-
-  const ultimas = ultimasParticipaciones(
-    (confirmadas as unknown as { colaborador_id: string; semanas: { fecha_entrega: string } }[]).map(
-      (a) => ({ colaborador_id: a.colaborador_id, fecha_entrega: a.semanas.fecha_entrega }),
-    ),
+  // Última participación (spec §3), agregada en la base de datos: una fila por
+  // colaborador, así que el límite de 1000 filas de PostgREST no la corta.
+  const { data: participaciones, error: errorParticipaciones } = await cliente
+    .from("ultimas_participaciones")
+    .select("colaborador_id, ultima_participacion");
+  if (errorParticipaciones) return fallo(traducirError(errorParticipaciones));
+  const ultimas = new Map(
+    (participaciones as { colaborador_id: string; ultima_participacion: string }[]).map((f) => [
+      f.colaborador_id,
+      f.ultima_participacion,
+    ]),
   );
 
   return ok(
