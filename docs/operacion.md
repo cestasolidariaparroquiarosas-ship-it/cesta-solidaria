@@ -4,7 +4,8 @@
 
 1. **Gmail de la cesta:**
    - Activar la verificación en dos pasos.
-   - Crear una contraseña de aplicación (Cuenta de Google → Seguridad → Contraseñas de aplicación).
+   - Crear una contraseña de aplicación en https://myaccount.google.com/apppasswords (Google no siempre la muestra en el menú de Seguridad). No funciona si la verificación en dos pasos es solo con llaves de seguridad.
+   - Si se cambia la contraseña de la cuenta, Google revoca las contraseñas de aplicación: hay que crear otra y actualizar `SMTP_PASS`.
 2. **Supabase** (con la cuenta de Gmail):
    - Crear dos proyectos en región UE: `cesta-produccion` y `cesta-pruebas`.
    - En cada uno, en Authentication → Sign In / Providers, desactivar "Allow new users to sign up" (CA-25).
@@ -21,8 +22,8 @@
    | `SUPABASE_SECRET_KEY` | producción | pruebas |
    | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | `smtp.gmail.com`, `465`, `true` | igual |
    | `SMTP_USER`, `SMTP_PASS` | Gmail y contraseña de aplicación | igual |
-   | `APP_URL` | URL de producción | URL de la vista previa |
-   | `ADMIN_EMAIL` | correo del administrador | igual |
+   | `APP_URL` | URL de producción | sin poner: se usa la que pone Vercel (`VERCEL_URL`) |
+   | `ADMIN_EMAIL` | correo del administrador: recibe los avisos y es el "Responder a" de los correos | igual |
    | `CRON_SECRET` | cadena aleatoria larga | otra distinta |
 
    - Las dos `NEXT_PUBLIC_*` deben ser de tipo **Config**, no "Secret": la app las lee al construirse, y una variable "Secret" llega vacía. Son públicas por diseño (la RLS es la que protege los datos).
@@ -105,3 +106,10 @@ Si un colaborador pide que se borren sus datos, en Colaboradores → su ficha �
 
 - Si tiene alimentos asignados en una semana que aún no ha terminado (propuesta o pendiente de respuesta), la app no deja eliminarlo: primero hay que cambiarlo por otro colaborador en el reparto de esa semana.
 - Las copias de seguridad, cuando estén activas, se guardan 30 días. Sus datos desaparecen de ellas cuando caducan las copias anteriores al borrado.
+
+## Correo
+
+- **Comprobar que funciona:** en Inicio → Correo → "Enviar un correo de prueba". Llega a `ADMIN_EMAIL`. Si falla con el código `535`, Gmail no acepta el usuario o la contraseña: revisa `SMTP_USER` y `SMTP_PASS` (la contraseña de aplicación, sin espacios).
+- **Si un correo de una semana no sale:** la asignación se queda "Correo no enviado" en el paso 4 de la semana, con el botón "Volver a intentarlo". El cron diario (PR 7) también lo reintentará. En `registro_eventos` queda un `error_envio` con el código del error (nunca la dirección).
+- **Límite de Gmail:** unos 500 correos al día; para esta cesta sobra.
+- **Alimentos sin cubrir:** si alguien no puede y no queda nadie disponible (o ya no hay tiempo antes de la entrega), llega un aviso a `ADMIN_EMAIL` y la semana lo muestra como "Sin cubrir", con el botón "Buscar sustituto" para cuando haya alguien (por ejemplo, tras dar de alta a un colaborador).

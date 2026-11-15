@@ -62,9 +62,9 @@ npm run version:check     # política de versiones
 ## Estructura
 
 - `app/(admin)/`: pantallas protegidas. Las piezas de formulario y los estilos comunes están en `app/(admin)/_ui/`.
-- `app/login`, `app/r/[token]` y `app/baja/[token]`: rutas públicas.
+- `app/login`, `app/(publico)/r/[token]` y `app/(publico)/baja/[token]`: rutas públicas. Las de los enlaces del correo usan el cliente con la clave secreta (`lib/supabase/servicio.ts`): cada consulta se limita a la asignación del token, y las funciones SQL que llaman solo las puede ejecutar `service_role`.
 - `lib/dominio/`: lógica pura (R1–R3).
-- `lib/servicios/`: base de datos y correo.
+- `lib/servicios/`: base de datos y correo. `lib/correo/`: plantillas (puras) y envío con Nodemailer (Gmail en producción, Mailpit en local y en CI; las pruebas leen Mailpit con `tests/utilidades/mailpit.ts`).
 - `tests/unit`, `tests/integration` y `tests/e2e`. Las pruebas `@humo` se ejecutan contra los entornos desplegados.
   - En e2e, los mensajes de error se buscan con `alerta(page, texto)` de `tests/e2e/utilidades.ts`: Next.js añade un anunciador de rutas que también tiene `role="alert"`.
   - Los formularios con `useActionState` devuelven lo enviado en el estado (`valores`) cuando hay un error, porque React vacía el formulario tras cada envío.

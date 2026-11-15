@@ -115,10 +115,15 @@ export async function itemsDeSemana(cliente: SupabaseClient, semanaId: string): 
 
 export type AsignacionReparto = {
   id: string;
-  estado: string;
+  estado: "propuesta" | "pendiente" | "confirmada" | "rechazada" | "sin_respuesta";
   /** null tras "Eliminar definitivamente" al colaborador (CA-04). */
-  colaborador: { id: string; nombre: string } | null;
+  colaborador: Pick<Colaborador, "id" | "nombre" | "estado" | "pausado_hasta"> | null;
   items: ItemAsignado[];
+  plazo: string | null;
+  enviado_en: string | null;
+  respondido_en: string | null;
+  /** Asignación a la que sustituye, si viene de una reasignación (R4.4). */
+  sustituye_a: string | null;
 };
 
 export async function obtenerReparto(cliente: SupabaseClient, semanaId: string): Promise<Resultado<AsignacionReparto[]>> {
@@ -126,26 +131,28 @@ export async function obtenerReparto(cliente: SupabaseClient, semanaId: string):
   const { data, error } = await cliente
     .from("asignaciones")
     .select(
-      "id, estado, creado_en, colaboradores(id, nombre), asignacion_items(cantidad, cesta_items(alimento_id, unidad, precio_unitario, alimentos(nombre)))",
+      "id, estado, creado_en, plazo, enviado_en, respondido_en, sustituye_a, colaboradores(id, nombre, estado, pausado_hasta), asignacion_items(cantidad, cesta_items(alimento_id, unidad, precio_unitario, alimentos(nombre)))",
     )
     .eq("semana_id", semanaId)
     .order("creado_en")
     .order("id");
   if (error) return fallo(traducirError(error));
 
-  const filas = data as unknown as {
-    id: string;
-    estado: string;
-    colaboradores: { id: string; nombre: string } | null;
+  const filas = data as unknown as (Omit<AsignacionReparto, "colaborador" | "items"> & {
+    colaboradores: AsignacionReparto["colaborador"];
     asignacion_items: {
       cantidad: number;
       cesta_items: { alimento_id: string; unidad: string; precio_unitario: number | string; alimentos: { nombre: string } };
     }[];
-  }[];
+  })[];
   return ok(
     filas.map((a) => ({
       id: a.id,
       estado: a.estado,
+      plazo: a.plazo,
+      enviado_en: a.enviado_en,
+      respondido_en: a.respondido_en,
+      sustituye_a: a.sustituye_a,
       colaborador: a.colaboradores,
       items: a.asignacion_items.map((i) => ({
         alimento_id: i.cesta_items.alimento_id,
