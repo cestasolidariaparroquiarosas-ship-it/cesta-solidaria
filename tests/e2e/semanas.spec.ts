@@ -170,7 +170,9 @@ test.describe("semanas en el móvil", () => {
     await crearSemana(page);
     await sinDesbordar(page);
     await page.getByRole("link", { name: "Añadir cesta" }).click();
-    await page.getByLabel("Identificador").fill(`${MARCA} Familia con nombre largo`);
+    // El identificador más largo que se admite (40 caracteres).
+    const largo = `${MARCA} Familia numerosa del barrio`.slice(0, 40);
+    await page.getByLabel("Identificador").fill(largo);
     await page.getByLabel("Adultos").fill("3");
     await page.getByLabel("Lista base").selectOption({ label: `${MARCA} Familia` });
     await page.getByRole("button", { name: "Crear cesta" }).click();
@@ -178,7 +180,7 @@ test.describe("semanas en el móvil", () => {
     await sinDesbordar(page);
     // La semana con una cesta, que es la pantalla más ancha.
     await page.getByRole("link", { name: /Entrega del/ }).click();
-    await expect(page.getByRole("link", { name: new RegExp(`${MARCA} Familia con nombre largo`) })).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(largo) })).toBeVisible();
     await sinDesbordar(page);
   });
 });
