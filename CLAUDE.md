@@ -16,7 +16,7 @@ Todo cambio sigue esta cadena, y cada paso deja un artefacto en `docs/sdlc/NNNN-
 4. **PR:** código y pruebas. Cada CA tiene al menos una prueba que lo nombra (por ejemplo, `"CA-11: ..."`).
 5. **Despliegue:** automático al fusionar en `main` si todo pasa. No hay puerta humana: es decisión del responsable (2026-11-14).
 
-Iteración vigente: `docs/sdlc/0001-cesta-v1/`.
+Iteraciones: `docs/sdlc/0001-cesta-v1/` (la app, v1.0.0) y `docs/sdlc/0002-datos-de-prueba/` (datos inventados para enseñar la app, v1.1.0).
 
 ## Reglas de trabajo
 
@@ -57,6 +57,7 @@ npm run supabase:env      # escribe .env.local a partir del Supabase local
 npm run test:integration  # contra Supabase local
 npm run build && npm run test:e2e
 npm run version:check     # política de versiones
+npm run test:datos-de-prueba  # carga y borrado de los datos de prueba (base sin seed: supabase db reset --no-seed)
 ```
 
 ## Estructura
@@ -68,5 +69,6 @@ npm run version:check     # política de versiones
 - `tests/unit`, `tests/integration` y `tests/e2e`. Las pruebas `@humo` se ejecutan contra los entornos desplegados.
   - En e2e, los mensajes de error se buscan con `alerta(page, texto)` de `tests/e2e/utilidades.ts`: Next.js añade un anunciador de rutas que también tiene `role="alert"`.
   - Los formularios con `useActionState` devuelven lo enviado en el estado (`valores`) cuando hay un error, porque React vacía el formulario tras cada envío.
+- `scripts/datos-de-prueba/`: datos inventados para enseñar la app (iteración 0002), con el workflow manual `datos-de-prueba.yml`. Solo se cargan en una base vacía.
 - `.github/workflows/`: `ci.yml` (PR), `deploy.yml` (main y republicación) y `mantener-activo.yml` (consulta diaria a los dos Supabase). Las copias de seguridad están en el repositorio privado `cesta-copias` (workflow `copia`), no aquí: este repositorio es público.
 - `docs/operacion.md`: puesta en marcha, cómo volver a una versión anterior y cómo restaurar copias.

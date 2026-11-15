@@ -80,6 +80,21 @@ Viven en el repositorio **privado** `cesta-copias`, no en este: los artefactos d
   - Ha cambiado la contraseña de la base de datos: actualiza `SUPABASE_PROD_DB_URL` en `cesta-copias` (y en este repositorio).
   - Supabase ha cambiado sus tablas internas (`auth`), y el Supabase desechable va por detrás. Si el error es *column … does not exist* o *permission denied* en `auth`, sube la versión `SUPABASE_CLI` de `copia.yml`.
 
+## Datos de prueba
+
+Datos inventados para que los administradores conozcan la app antes de cargar los reales (iteración 0002, `docs/sdlc/0002-datos-de-prueba/`):
+- 44 alimentos de la cesta tipo y su lista base;
+- 45 colaboradores;
+- 8 familias;
+- 3 semanas cerradas, 1 enviada y 1 en preparación.
+
+- **Requisito:** el secreto `DEMO_CORREO_BASE` en GitHub, con la Gmail de la cesta. Los colaboradores de prueba tienen alias `usuario+demoNN@…`: todo lo que se les envía llega a esa bandeja.
+- **Cargar:** Actions → datos-de-prueba → Run workflow → `cargar` y el entorno. Solo funciona si la base no tiene datos de la app. Las fechas son relativas al día de la carga.
+- **Borrar** (antes de cargar los datos reales): igual, con `borrar`. Deja vacías las tablas de la app salvo las etiquetas de exclusión, y no toca las cuentas de administrador. Se niega si hay algún colaborador que no sea de prueba.
+- **Después de cargar**, la tarea diaria trata la semana enviada como cualquier otra: al vencer el plazo, pasa a "sin respuesta" a quien no ha contestado y escribe a los sustitutos (a la Gmail de la cesta).
+- El registro del workflow solo muestra recuentos por tabla.
+- El workflow comparte cola con `deploy`: si coincide con un despliegue, espera a que termine.
+
 ## Volver a una versión anterior
 
 - **La última publicación falla:** en Vercel, Instant Rollback (o `vercel rollback`). El plan gratuito solo permite volver a la versión inmediatamente anterior.

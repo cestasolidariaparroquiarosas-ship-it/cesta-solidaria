@@ -30,6 +30,18 @@ export default defineConfig({
           testTimeout: 30_000,
         },
       },
+      {
+        // Iteración 0002: carga y borrado de los datos de prueba. Necesita la base sin
+        // datos de la app (supabase db reset --no-seed): CI lo ejecuta aparte, al final.
+        extends: true,
+        test: {
+          name: "datos-de-prueba",
+          include: ["tests/datos-de-prueba/**/*.test.ts"],
+          environment: "node",
+          fileParallelism: false,
+          testTimeout: 120_000,
+        },
+      },
     ],
   },
 });

@@ -41,7 +41,7 @@ Para cada CA del spec: dónde se comprueba. Las pruebas nombran el CA en su tít
 | CA-30 | Un PR con pruebas fallidas no se fusiona | O `main` protegida: PR obligatorio y check `comprobaciones`, también para administradores. Comprobado por API el 2026-11-15 (`enforce_admins` activado). Varios PR tuvieron ejecuciones de CI fallidas y solo se fusionaron cuando pasaron |
 | CA-31 | Humo fallido en pruebas → producción intacta | O en `deploy.yml`, el job `produccion` (migraciones y despliegue) depende de `pruebas` y solo corre si este termina bien. Revisado en la revisión del PR 0. No se ha provocado un fallo real de humo a propósito |
 | CA-32 | Etiqueta, release y CHANGELOG por despliegue | O etiquetas y releases `v0.1.0` a `v0.9.0`; `scripts/comprobar-version.mjs` en CI |
-| CA-33 | Republicar una etiqueta anterior | O el 2026-11-15 se republicó `v0.9.0` a mano (deploy → Run workflow), primero en pruebas y después en producción |
+| CA-33 | Republicar una etiqueta anterior | O el 2026-11-15, tras publicar la 1.0.0, se republicó `v0.8.0` a mano (deploy → Run workflow): checkout de la etiqueta, primero en pruebas y después en producción, sin tocar las migraciones. Después se volvió a la `v1.0.0` igual. Pruebas en los comentarios del PR #11 |
 | CA-34 | Copia diaria cifrada y restauración comprobada | O repositorio privado `cesta-copias`, workflow `copia`: cada ejecución restaura la copia cifrada en un Supabase desechable y compara las filas de cada tabla (ver la nota) |
 
 ## Nota sobre CA-34

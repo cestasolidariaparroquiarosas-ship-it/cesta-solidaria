@@ -61,6 +61,18 @@ jobs:
 
       - run: npm run test:e2e
 
+      # Iteración 0002: necesita la base sin datos de la app, así que va al final.
+      - name: Datos de prueba (carga, borrado y programa del workflow)
+        env:
+          DEMO_CORREO_BASE: cesta@example.com
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          npx supabase db reset --no-seed
+          npm run test:datos-de-prueba
+          npm run datos-de-prueba -- cargar
+          psql "$DB_URL" --variable ON_ERROR_STOP=1 --file scripts/comprobar-rls.sql
+          npm run datos-de-prueba -- borrar
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

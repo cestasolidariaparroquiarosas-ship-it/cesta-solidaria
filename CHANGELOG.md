@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [1.1.0] - 2026-11-15
+
+Origen: [intent](docs/sdlc/0002-datos-de-prueba/intent.md) · [spec](docs/sdlc/0002-datos-de-prueba/spec.md) · [plan](docs/sdlc/0002-datos-de-prueba/plan.md), iteración 0002. La app no cambia.
+
+### Añadido
+- **Datos de prueba** para que los administradores conozcan la app:
+  - 44 alimentos de su cesta tipo, con precios aproximados de marca blanca;
+  - una lista base ajustada por adulto y por niño ([comparación con el Excel](docs/sdlc/0002-datos-de-prueba/cesta-tipo.md));
+  - 45 colaboradores inventados, con alias de la Gmail de la cesta;
+  - 8 familias con identificadores genéricos;
+  - 3 semanas cerradas, 1 enviada y 1 en preparación.
+- **Cómo se generan:** con las reglas de la app (R1 a R3) y sus funciones SQL, en una sola transacción.
+- **Workflow manual `datos-de-prueba`** (`cargar` o `borrar`, en pruebas o en producción):
+  - solo carga en una base sin datos de la app;
+  - el borrado se niega si hay algún colaborador real;
+  - el registro solo muestra recuentos.
+- **Pruebas:**
+  - unitarias del ajuste y del conjunto de datos;
+  - CA-0201 a CA-0207 contra el Supabase local, en un proyecto de Vitest aparte (`test:datos-de-prueba`) que CI ejecuta al final con la base sin seed.
+- Dependencias de desarrollo: `pg`, `@types/pg` y `tsx`.
+
 ## [1.0.0] - 2026-11-15
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 9. Primera versión completa: todos los CA del spec tienen su comprobación ([trazabilidad](docs/sdlc/0001-cesta-v1/trazabilidad.md)).

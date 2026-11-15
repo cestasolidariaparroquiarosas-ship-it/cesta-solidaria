@@ -1,0 +1,58 @@
+# Datos de prueba (iteración 0002, docs/sdlc/0002-datos-de-prueba/).
+# Solo a mano: Actions → datos-de-prueba → Run workflow.
+#   cargar: solo en una base sin datos de la app (RD1), todo o nada (RD2).
+#   borrar: deja vacías las tablas de la app salvo las etiquetas; se niega si hay algún
+#           colaborador que no sea de prueba (RD3).
+# El registro solo muestra recuentos (RD4). Los secretos van por env: (RD5).
+name: datos-de-prueba
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "Qué hacer"
+        type: choice
+        options: [cargar, borrar]
+        required: true
+      entorno:
+        description: "Dónde"
+        type: choice
+        options: [pruebas, produccion]
+        required: true
+
+permissions:
+  contents: read
+
+# No a la vez que un despliegue: las migraciones y la carga tocan la misma base.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  datos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: ${{ inputs.accion }} en ${{ inputs.entorno }}
+        env:
+          DB_URL: ${{ inputs.entorno == 'produccion' && secrets.SUPABASE_PROD_DB_URL || secrets.SUPABASE_STAGING_DB_URL }}
+          DEMO_CORREO_BASE: ${{ secrets.DEMO_CORREO_BASE }}
+          ACCION: ${{ inputs.accion }}
+        run: |
+          [ -n "$DEMO_CORREO_BASE" ] || { echo "::error::Falta el secreto DEMO_CORREO_BASE (Gmail de la cesta)"; exit 1; }
+          [ -n "$DB_URL" ] || { echo "::error::Falta la cadena de conexión de ese entorno"; exit 1; }
+          npm run datos-de-prueba -- "$ACCION"
+
+      - name: RLS y permisos siguen bien
+        env:
+          DB_URL: ${{ inputs.entorno == 'produccion' && secrets.SUPABASE_PROD_DB_URL || secrets.SUPABASE_STAGING_DB_URL }}
+        run: psql "$DB_URL" --variable ON_ERROR_STOP=1 --quiet --file scripts/comprobar-rls.sql
