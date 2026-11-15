@@ -121,7 +121,11 @@ describe("tarea diaria", () => {
     // Dora confirmó, con el plazo vencido: no se toca. (Y como ya ha participado,
     // pasa por detrás de Carmen en R2.4.)
     const otra = await semanaEnviada(fechaFutura(), { Dora: -1 });
-    await servicio.from("asignaciones").update({ estado: "confirmada" }).eq("id", otra.asignaciones.Dora);
+    const { error } = await servicio
+      .from("asignaciones")
+      .update({ estado: "confirmada", respondido_en: new Date().toISOString() })
+      .eq("id", otra.asignaciones.Dora);
+    expect(error).toBeNull();
 
     const resumen = await tareaDiaria(servicio, correo, URL_APP);
     expect(resumen.baseDeDatos).toBe("ok");
