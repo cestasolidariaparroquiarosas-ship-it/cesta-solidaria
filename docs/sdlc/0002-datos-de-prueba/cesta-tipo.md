@@ -23,7 +23,7 @@ Generada con `scripts/datos-de-prueba/ajuste.ts`.
 | Yogures de frutas | 0,5 | 0,25 | 1 | 1 | 2 | 2 | 2 → **2/3** |
 | Café molido | 0,25 | 0 | 1 | 1 | 1 | 1 | 1 |
 | Galletas | 0,5 | 0,75 | 1 | 2 | 3 → **2/3** | 4 | 4 |
-| Cereales | 0 | 0,5 | 0 | 2 → **1** | 2 → **1/1** | 2 | 2 |
+| Cereales | 0 | 0,5 | 0 | 2 → **1** | 2 → **1** | 2 | 2 |
 | Cacao soluble | 0 | 0,25 | 0 | 1 | 1 | 1 | 1 |
 | Azúcar | 0,25 | 0 | 1 | 1 | 1 | 1 | 1 |
 | Harina de trigo | 0,25 | 0 | 1 | 1 | 1 | 1 | 1 |

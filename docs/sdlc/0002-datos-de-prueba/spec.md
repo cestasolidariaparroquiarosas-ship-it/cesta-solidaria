@@ -25,9 +25,12 @@ Así, lo que vean los administradores es lo que la app produciría de verdad.
 Todas las fechas son relativas al día de la carga (D), en hora de Madrid.
 
 ### Catálogo
-- Los productos de la "cesta tipo" del Excel de los administradores, unos 40, más tres especiales que se añaden a mano: leche sin lactosa, pañales y leche de continuación.
+- Los productos de la "cesta tipo" del Excel de los administradores (39), más cinco especiales que se añaden a mano: leche sin lactosa, pañales, leche de continuación, pechuga de pavo (para las familias sin cerdo) y chorizo para guisar.
 - Cada uno con su unidad y un **precio aproximado de marca blanca**: el Excel no tiene precios.
-- **Etiquetas:** las de la migración inicial (cerdo, gluten, lactosa, frutos secos, huevo). Por ejemplo, el fuet y el jamón York llevan "cerdo"; la leche, los yogures y el queso, "lactosa"; el pan, la pasta, las galletas y la harina, "gluten".
+- **Etiquetas:** las de la migración inicial (cerdo, gluten, lactosa, frutos secos, huevo). Son orientativas. Por ejemplo:
+  - el fuet, el jamón cocido y el chorizo llevan "cerdo" y "lactosa", porque los de marca blanca suelen llevar proteína de leche;
+  - la leche, los yogures y el queso llevan "lactosa";
+  - el pan, la pasta, las galletas, la harina y el cacao soluble llevan "gluten".
 - Los productos de limpieza y de aseo van en el catálogo como un alimento más: así es como los usan hoy.
 
 ### Lista base "Cesta tipo (aproximada)", predeterminada
@@ -65,19 +68,26 @@ Todas las fechas son relativas al día de la carga (D), en hora de Madrid.
 | 1 | D−35 | cerrada | 3 cestas. Reparto con confirmados y entregados, uno que no pudo (con sustituto) y uno sin respuesta |
 | 2 | D−21 | cerrada | 3 cestas, todo entregado |
 | 3 | D−7 | cerrada | 4 cestas, un colaborador confirmado sin marcar como entregado |
-| 4 | D+5 | enviada | 3 cestas. Plazo D+2 a las 20:00. La mitad confirmados, el resto esperando, y uno que no puede con su sustituto esperando respuesta |
+| 4 | D+5 | enviada | 3 cestas. Plazo D+2 a las 20:00. Casi todos confirmados, 3 esperando, y uno que no puede con su sustituto esperando respuesta |
 | 5 | D+12 | en preparación | 3 cestas, sin reparto: para que los administradores preparen el reparto y prueben a enviar |
 
 - **Las semanas pasadas** se construyen como lo haría la app y luego se fijan sus respuestas y entregas. Así el histórico y la rotación (R2) quedan coherentes.
 - **Semana 4:**
   - Sus asignaciones constan como enviadas, pero no se manda ningún correo al cargar.
-  - Cuando venza el plazo, la tarea diaria hará lo de siempre: pasar a "sin respuesta" a quien no conteste y escribir a los sustitutos. Esos correos llegan a la Gmail de la cesta.
+  - Cuando venza el plazo, la tarea diaria hará lo de siempre, y esos correos llegan a la Gmail de la cesta:
+    - **D+3:** pasa a "sin respuesta" a quien no haya contestado y escribe a sus sustitutos, con plazo hasta D+4 a las 23:59.
+    - **D+5:** si los sustitutos tampoco contestan, ya no hay tiempo: avisa al administrador de cada uno sin cubrir.
+    - **D+12:** cierra la semana.
+
+    Se evita contestando desde los enlaces de esos correos. Por eso hay pocos esperando: 3 más el sustituto.
 
 ## 3. Reglas
 
-- **RD1. La carga solo se hace en una base vacía.** Si alguna tabla de la app tiene filas (salvo las etiquetas de exclusión), no hace nada y lo dice.
+- **RD1. La carga solo se hace en una base vacía.** Si alguna tabla de la app tiene filas, no hace nada y lo dice. Las excepciones son las etiquetas de exclusión y `registro_eventos`: la auditoría puede tener, por ejemplo, el correo de prueba de Inicio. Una prueba de CI obliga a clasificar cualquier tabla nueva de `public`.
 - **RD2. La carga es todo o nada:** va en una sola transacción.
-- **RD3. El borrado** deja vacías todas las tablas de la app salvo las etiquetas de exclusión, y no toca las cuentas de administrador. No hace nada si hay algún colaborador cuyo correo no es un alias de prueba: ya habría datos reales.
+- **RD3. El borrado** deja vacías todas las tablas de la app salvo las etiquetas de exclusión, y no toca las cuentas de administrador. Borra los eventos de auditoría de las semanas, pero no los demás.
+  - No hace nada si hay algún colaborador cuyo correo no es un alias de prueba: ya habría datos reales.
+  - En producción hay que escribir `BORRAR PRODUCCION` para confirmar.
 - **RD4. El registro del workflow** solo muestra recuentos ("45 colaboradores, 16 cestas…"), nunca nombres ni correos.
 - **RD5. Secretos:**
   - El workflow toma `DEMO_CORREO_BASE` y la cadena de conexión del entorno elegido (`SUPABASE_PROD_DB_URL` o `SUPABASE_STAGING_DB_URL`) por `env:`.
@@ -106,3 +116,12 @@ Todas las fechas son relativas al día de la carga (D), en hora de Madrid.
 
 - Trabajar por grupos, por lotes fijos o por tramos de familia: depende de lo que digan los administradores tras probar la app (intent, preguntas abiertas).
 - Crear las cuentas de los administradores: las crea el responsable (paso 7 de la puesta en marcha).
+
+## 6. Ajustes tras la revisión independiente (2026-11-15)
+
+Los aplica el PR, dentro de lo aprobado:
+- **Semana 4:** 3 esperando en vez de la mitad, para que la tarea diaria no acabe enviando una docena de avisos al administrador.
+- **Etiquetas:** lactosa en los embutidos y gluten en el cacao.
+- **Productos especiales:** dos más, pavo y chorizo.
+- **Borrado:** confirmación en producción.
+- **RD1:** se aclara la excepción de `registro_eventos`.

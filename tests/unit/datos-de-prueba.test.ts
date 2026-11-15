@@ -45,8 +45,8 @@ describe("ajuste de la cesta tipo (spec 0002 §2)", () => {
 
 describe("CA-0203: correos de prueba", () => {
   it("CA-0203: son alias +demoNN de la base, en minúsculas", () => {
-    expect(aliasDeCorreo("Cesta.Solidaria@gmail.com", 7)).toBe("cesta.solidaria+demo07@gmail.com");
-    expect(aliasDeCorreo("cesta+algo@gmail.com", 45)).toBe("cesta+demo45@gmail.com");
+    expect(aliasDeCorreo("Cesta.Ejemplo@example.com", 7)).toBe("cesta.ejemplo+demo07@example.com");
+    expect(aliasDeCorreo("cesta+algo@example.com", 45)).toBe("cesta+demo45@example.com");
   });
 
   it("CA-0203: una base no válida se rechaza", () => {
@@ -55,14 +55,14 @@ describe("CA-0203: correos de prueba", () => {
   });
 
   it("CA-0205: el borrado reconoce sus alias y nada más", () => {
-    const base = "cesta@gmail.com";
+    const base = "cesta@example.com";
     expect(esAliasDePrueba(base, aliasDeCorreo(base, 3))).toBe(true);
-    expect(esAliasDePrueba(base, "CESTA+DEMO03@GMAIL.COM")).toBe(true);
-    expect(esAliasDePrueba(base, "cesta@gmail.com")).toBe(false);
-    expect(esAliasDePrueba(base, "cesta+demo3@gmail.com")).toBe(false);
-    expect(esAliasDePrueba(base, "otra+demo03@gmail.com")).toBe(false);
-    expect(esAliasDePrueba(base, "cesta+demo03@gmail.es")).toBe(false);
-    expect(esAliasDePrueba("cesta.x@gmail.com", "cestaax+demo03@gmail.com")).toBe(false);
+    expect(esAliasDePrueba(base, "CESTA+DEMO03@EXAMPLE.COM")).toBe(true);
+    expect(esAliasDePrueba(base, "cesta@example.com")).toBe(false);
+    expect(esAliasDePrueba(base, "cesta+demo3@example.com")).toBe(false);
+    expect(esAliasDePrueba(base, "otra+demo03@example.com")).toBe(false);
+    expect(esAliasDePrueba(base, "cesta+demo03@example.org")).toBe(false);
+    expect(esAliasDePrueba("cesta.x@example.com", "cestaax+demo03@example.com")).toBe(false);
   });
 });
 

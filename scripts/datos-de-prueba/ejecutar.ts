@@ -14,9 +14,12 @@ async function main() {
   if (!correoBase) throw new ErrorDatosDePrueba("Falta DEMO_CORREO_BASE");
 
   const local = /@(127\.0\.0\.1|localhost)[:/]/.test(url);
-  // Como psql en los workflows de despliegue (sslmode=require): cifrado, sin validar el
-  // certificado, que Supabase firma con su propia autoridad.
-  const bd = new Client({ connectionString: url, ssl: local ? false : { rejectUnauthorized: false } });
+  // Siempre cifrado fuera de local, sin validar el certificado (Supabase lo firma con su
+  // propia autoridad). Es más estricto que psql con su sslmode=prefer por defecto. Si la
+  // cadena trae ?sslmode=…, pg lo trata como verify-full y fallaría: se quita.
+  const cadena = new URL(url);
+  cadena.searchParams.delete("sslmode");
+  const bd = new Client({ connectionString: cadena.toString(), ssl: local ? false : { rejectUnauthorized: false } });
   await bd.connect();
   try {
     const resumen = accion === "cargar" ? await cargar(bd, { correoBase }) : await borrar(bd, { correoBase });
@@ -34,7 +37,10 @@ main().catch((e: unknown) => {
   else {
     const codigo = (e as { code?: string })?.code ?? "desconocido";
     const pista = (e as { hint?: string })?.hint;
-    console.error(`✗ Error inesperado (código ${codigo}${pista ? `, ${pista}` : ""}). No se ha cambiado nada.`);
+    console.error(
+      `✗ Error inesperado (código ${codigo}${pista ? `, ${pista}` : ""}). La transacción no debería haberse aplicado, ` +
+        "pero si el error fue al confirmarla, comprueba los recuentos (otra carga se negaría si hay datos) antes de repetir.",
+    );
   }
   process.exit(1);
 });

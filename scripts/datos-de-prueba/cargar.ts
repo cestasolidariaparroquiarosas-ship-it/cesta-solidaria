@@ -13,6 +13,7 @@ import { ajustar } from "./ajuste";
 import {
   aliasDeCorreo,
   CAMBIOS_DE_ESTADO,
+  ErrorDatosDePrueba,
   FAMILIAS,
   HORA_PLAZO,
   LISTA_BASE,
@@ -26,10 +27,14 @@ import {
 /** Lo mínimo de una conexión a Postgres: lo cumplen `pg` y PGlite. */
 export type Bd = { query: (texto: string, valores?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> };
 
-/** Error previsto (RD1, RD3): se muestra tal cual, porque no lleva datos personales. */
-export class ErrorDatosDePrueba extends Error {}
+export { ErrorDatosDePrueba };
 
-/** Tablas de la app, de las hijas a las madres. `etiquetas_exclusion` no se toca. */
+/**
+ * Tablas de la app que la carga exige vacías (RD1) y el borrado vacía (RD3). Fuera quedan
+ * `etiquetas_exclusion` (la crea la migración inicial y producción la necesita) y
+ * `registro_eventos` (auditoría: puede tener, por ejemplo, el correo de prueba de Inicio).
+ * Una prueba de CI falla si aparece una tabla nueva en public que no esté clasificada.
+ */
 export const TABLAS = [
   "asignacion_items",
   "asignaciones",
@@ -44,8 +49,10 @@ export const TABLAS = [
   "alimentos",
 ] as const;
 
-const ADMINISTRADOR = JSON.stringify({ role: "authenticated", app_metadata: { rol: "admin" } });
+export const TABLAS_FUERA = ["etiquetas_exclusion", "registro_eventos"] as const;
+
 const HORA_MS = 3_600_000;
+const MINUTO_MS = 60_000;
 
 export type Resumen = Record<string, number>;
 
@@ -59,16 +66,20 @@ export async function recuentos(bd: Bd): Promise<Resumen> {
   return resumen;
 }
 
+/**
+ * Todo o nada (RD2). Se entra con la cadena de conexión, como dueño de las tablas: la
+ * RLS no se aplica y las funciones de la app se pueden llamar directamente.
+ */
 export async function enTransaccion<T>(bd: Bd, trabajo: () => Promise<T>): Promise<T> {
   await bd.query("begin");
   try {
-    // Como una sesión de administrador: las funciones de la app lo comprueban igual.
-    await bd.query("select set_config('request.jwt.claims', $1, true)", [ADMINISTRADOR]);
     const resultado = await trabajo();
     await bd.query("commit");
     return resultado;
   } catch (e) {
-    await bd.query("rollback");
+    // Si se ha perdido la conexión, el rollback también falla: Postgres deshace la
+    // transacción igualmente, y lo que interesa es el error original.
+    await bd.query("rollback").catch(() => undefined);
     throw e;
   }
 }
@@ -80,7 +91,7 @@ export async function cargar(bd: Bd, opciones: { correoBase: string; ahora?: Dat
   aliasDeCorreo(opciones.correoBase, 1);
 
   return enTransaccion(bd, async () => {
-    // RD1: solo en una base vacía.
+    // RD1: solo en una base sin datos de la app (ver TABLAS).
     const antes = await recuentos(bd);
     const ocupadas = Object.entries(antes).filter(([, n]) => n > 0);
     if (ocupadas.length)
@@ -297,34 +308,44 @@ async function cargarSemana(
     .sort((a, b) => orden.get(a.colaborador)! - orden.get(b.colaborador)!);
 
   if (semana.estado === "enviada") {
+    // Constan como enviadas: la carga no manda correos, y la tarea diaria no los reenvía.
     await q("update public.asignaciones set enviado_en = $2 where semana_id = $1", [semanaId, c.ahora.toISOString()]);
-    const [primeros, resto] = [asignaciones.slice(0, semana.noPueden), asignaciones.slice(semana.noPueden)];
-    for (const a of primeros) {
+    const noPueden = asignaciones.slice(0, semana.noPueden);
+    const confirman = asignaciones.slice(semana.noPueden, asignaciones.length - semana.esperando);
+    for (const a of noPueden) {
       const plazo = plazoReasignacion(c.ahora, fecha);
       const nueva = await responder(q, await token(q, a.id), "no", await candidatosParaSustituir(q, semanaId, fecha), plazo);
       if (nueva) await q("update public.asignaciones set enviado_en = $2 where id = $1", [nueva, c.ahora.toISOString()]);
     }
-    for (const a of resto.slice(0, Math.floor(resto.length / 2))) await responder(q, await token(q, a.id), "si");
+    for (const a of confirman) await responder(q, await token(q, a.id), "si");
     return;
   }
 
   // Semana pasada: noPueden, sinRespuesta y el resto confirma. Los sustitutos confirman.
   const envio = instante(sumarDias(c.hoy, semana.plazo - 3), "10:00");
-  const sustituciones: { original: string; nueva: string }[] = [];
+  const respondio = (n: number) => new Date(envio.getTime() + (n + 1) * 2 * HORA_MS);
+  const sustituciones: { nueva: string; enviada: Date }[] = [];
   let i = 0;
   for (const a of asignaciones.slice(i, (i += semana.noPueden))) {
     const nueva = await responder(q, await token(q, a.id), "no", await candidatosParaSustituir(q, semanaId, fecha), plazoProvisional);
-    if (nueva) sustituciones.push({ original: a.id, nueva });
+    // Al sustituto se le escribe en cuanto el original dice que no.
+    const n = asignaciones.indexOf(a);
+    if (nueva) sustituciones.push({ nueva, enviada: new Date(respondio(n).getTime() + 5 * MINUTO_MS) });
   }
   for (const a of asignaciones.slice(i, (i += semana.sinRespuesta))) {
-    // Lo que haría la tarea diaria al vencer el plazo.
+    // Lo que hace la tarea diaria al vencer el plazo (vencer_asignacion).
     await q("update public.asignaciones set estado = 'sin_respuesta' where id = $1", [a.id]);
+    await q("insert into public.registro_eventos (tipo, semana_id, asignacion_id) values ('sin_respuesta', $1, $2)", [
+      semanaId,
+      a.id,
+    ]);
     const [{ nueva }] = await q("select privado.reasignar($1, $2::uuid[], $3)::text as nueva", [
       a.id,
       await candidatosParaSustituir(q, semanaId, fecha),
       plazoProvisional.toISOString(),
     ]);
-    if (nueva) sustituciones.push({ original: a.id, nueva: String(nueva) });
+    // La tarea diaria pasa la mañana siguiente al plazo.
+    if (nueva) sustituciones.push({ nueva: String(nueva), enviada: instante(sumarDias(c.hoy, semana.plazo + 1), "08:00") });
   }
   for (const a of asignaciones.slice(i)) await responder(q, await token(q, a.id), "si");
   for (const s of sustituciones) await responder(q, await token(q, s.nueva), "si");
@@ -336,16 +357,15 @@ async function cargarSemana(
       `update public.asignaciones set plazo = $2, enviado_en = $3,
          respondido_en = case when respondido_en is null then null else $4::timestamptz end
        where id = $1`,
-      [a.id, plazoReal.toISOString(), envio.toISOString(), new Date(envio.getTime() + (n + 1) * 2 * HORA_MS).toISOString()],
+      [a.id, plazoReal.toISOString(), envio.toISOString(), respondio(n).toISOString()],
     );
   }
-  for (const [n, s] of sustituciones.entries()) {
-    const reenvio = new Date(plazoReal.getTime() - (n + 1) * HORA_MS);
+  for (const s of sustituciones) {
     await q("update public.asignaciones set enviado_en = $2, plazo = $3, respondido_en = $4 where id = $1", [
       s.nueva,
-      reenvio.toISOString(),
-      plazoReasignacion(reenvio, fecha).toISOString(),
-      new Date(reenvio.getTime() + 3 * HORA_MS).toISOString(),
+      s.enviada.toISOString(),
+      plazoReasignacion(s.enviada, fecha).toISOString(),
+      new Date(s.enviada.getTime() + 3 * HORA_MS).toISOString(),
     ]);
   }
 
@@ -360,4 +380,6 @@ async function cargarSemana(
 
   await q("select public.cerrar_semana($1)", [semanaId]);
   await q("update public.semanas set cerrada_en = $2 where id = $1", [semanaId, instante(sumarDias(fecha, 2), "12:00").toISOString()]);
+  // La auditoría de la semana, con la fecha del envío y no la de la carga.
+  await q("update public.registro_eventos set fecha = $2 where semana_id = $1", [semanaId, envio.toISOString()]);
 }

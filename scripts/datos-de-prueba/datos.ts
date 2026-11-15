@@ -4,6 +4,9 @@
 
 import type { CantidadesPorTramo } from "./ajuste";
 
+/** Error previsto: se muestra tal cual, porque no lleva datos personales. */
+export class ErrorDatosDePrueba extends Error {}
+
 export const LISTA_BASE = "Cesta tipo (aproximada)";
 export const PRECIO_BASE = 20;
 /** Hora del plazo de respuesta de cada semana, en Madrid. */
@@ -15,7 +18,11 @@ export type Producto = {
   unidad: string;
   /** Precio aproximado de marca blanca: el Excel no tiene precios. */
   precio: number;
-  /** Códigos de las etiquetas de exclusión de la migración inicial. */
+  /**
+   * Códigos de las etiquetas de exclusión de la migración inicial. Son orientativas: los
+   * embutidos de marca blanca suelen llevar proteína de leche, y el cacao soluble, cereal
+   * malteado. Con productos reales hay que mirar la etiqueta de cada uno.
+   */
   etiquetas: string[];
   /** Cantidades del Excel por tramo; null si no va en la lista base (se añade a mano). */
   tramos: CantidadesPorTramo | null;
@@ -30,7 +37,7 @@ export const PRODUCTOS: Producto[] = [
   { clave: "cafe", nombre: "Café molido", unidad: "paquete 250 g", precio: 2.6, etiquetas: [], tramos: [1, 1, 1, 1, 1] },
   { clave: "galletas", nombre: "Galletas", unidad: "paquete 800 g", precio: 1.6, etiquetas: ["gluten"], tramos: [1, 2, 3, 4, 4] },
   { clave: "cereales", nombre: "Cereales", unidad: "caja 500 g", precio: 1.75, etiquetas: ["gluten"], tramos: [0, 2, 2, 2, 2] },
-  { clave: "cacao", nombre: "Cacao soluble", unidad: "bote 400 g", precio: 2.4, etiquetas: [], tramos: [0, 1, 1, 1, 1] },
+  { clave: "cacao", nombre: "Cacao soluble", unidad: "bote 400 g", precio: 2.4, etiquetas: ["gluten"], tramos: [0, 1, 1, 1, 1] },
   { clave: "azucar", nombre: "Azúcar", unidad: "paquete 1 kg", precio: 1.15, etiquetas: [], tramos: [1, 1, 1, 1, 1] },
   { clave: "harina", nombre: "Harina de trigo", unidad: "paquete 1 kg", precio: 0.85, etiquetas: ["gluten"], tramos: [1, 1, 1, 1, 1] },
   { clave: "aceite_oliva", nombre: "Aceite de oliva", unidad: "botella 1 l", precio: 6.95, etiquetas: [], tramos: [1, 1, 1, 1, 1] },
@@ -46,8 +53,8 @@ export const PRODUCTOS: Producto[] = [
   { clave: "fideos", nombre: "Fideos", unidad: "paquete 1 kg", precio: 1.3, etiquetas: ["gluten"], tramos: [1, 1, 1, 1, 1] },
   { clave: "macarrones", nombre: "Macarrones", unidad: "paquete 1 kg", precio: 1.3, etiquetas: ["gluten"], tramos: [1, 2, 2, 2, 2] },
   { clave: "arroz", nombre: "Arroz", unidad: "paquete 1 kg", precio: 1.45, etiquetas: [], tramos: [1, 2, 2, 2, 2] },
-  { clave: "fuet", nombre: "Fuet", unidad: "unidad", precio: 2.2, etiquetas: ["cerdo"], tramos: [1, 1, 2, 2, 2] },
-  { clave: "jamon_cocido", nombre: "Jamón cocido", unidad: "barra", precio: 2.8, etiquetas: ["cerdo"], tramos: [1, 1, 1, 1, 1] },
+  { clave: "fuet", nombre: "Fuet", unidad: "unidad", precio: 2.2, etiquetas: ["cerdo", "lactosa"], tramos: [1, 1, 2, 2, 2] },
+  { clave: "jamon_cocido", nombre: "Jamón cocido", unidad: "barra", precio: 2.8, etiquetas: ["cerdo", "lactosa"], tramos: [1, 1, 1, 1, 1] },
   { clave: "queso_lonchas", nombre: "Queso en lonchas", unidad: "paquete", precio: 1.95, etiquetas: ["lactosa"], tramos: [1, 2, 2, 3, 3] },
   { clave: "atun", nombre: "Atún en aceite", unidad: "pack de 3 latas", precio: 3.4, etiquetas: [], tramos: [2, 2, 2, 3, 3] },
   { clave: "sardinas", nombre: "Sardinas en aceite", unidad: "pack de 2 latas", precio: 2.1, etiquetas: [], tramos: [2, 2, 2, 2, 3] },
@@ -66,7 +73,7 @@ export const PRODUCTOS: Producto[] = [
   { clave: "panales", nombre: "Pañales", unidad: "paquete", precio: 8.5, etiquetas: [], tramos: null },
   { clave: "leche_continuacion", nombre: "Leche de continuación", unidad: "bote 800 g", precio: 9.8, etiquetas: ["lactosa"], tramos: null },
   { clave: "pavo", nombre: "Pechuga de pavo", unidad: "barra", precio: 2.9, etiquetas: [], tramos: null },
-  { clave: "chorizo", nombre: "Chorizo para guisar", unidad: "unidad", precio: 2.1, etiquetas: ["cerdo"], tramos: null },
+  { clave: "chorizo", nombre: "Chorizo para guisar", unidad: "unidad", precio: 2.1, etiquetas: ["cerdo", "lactosa"], tramos: null },
 ];
 
 // ---------------------------------------------------------------------------
@@ -75,14 +82,14 @@ export const PRODUCTOS: Producto[] = [
 
 export const NOMBRES = [
   "Ana Ruiz", "Pedro Navarro", "Lucía Gómez", "Javier Molina", "Carmen Ortega",
-  "Miguel Serrano", "Rosa Delgado", "Antonio Vidal", "Pilar Castro", "José Luis Rubio",
+  "Miguel Serrano", "Rosa Delgado", "Antonio Vidal", "Pilar Esteban", "José Luis Rubio",
   "Teresa Marín", "Francisco Iglesias", "Mercedes Santos", "Manuel Herrero", "Isabel Pascual",
-  "Luis Cano", "Dolores Prieto", "Alberto Calvo", "Elena Gallego", "Ramón Vega",
-  "Concepción León", "Jorge Cabrera", "Marta Domínguez", "Sergio Lozano", "Beatriz Méndez",
+  "Luis Cano", "Dolores Prieto", "Alberto Calvo", "Elena Gallego", "Ramón Ibáñez",
+  "Concepción León", "Jorge Cabrera", "Marta Domínguez", "Sergio Valero", "Beatriz Méndez",
   "Fernando Guerrero", "Raquel Muñoz", "Andrés Fuentes", "Victoria Carrasco", "Daniel Nieto",
-  "Silvia Aguilar", "Rafael Pastor", "Inmaculada Soto", "Pablo Crespo", "Nuria Benítez",
+  "Silvia Aguilar", "Rafael Pastor", "Inmaculada Soto", "Pablo Robles", "Nuria Benítez",
   "Ángel Montero", "Cristina Hidalgo", "Alfonso Medina", "Montserrat Rojas", "Enrique Arias",
-  "Sonia Garrido", "Tomás Lorenzo", "Amparo Peña", "Óscar Bravo", "Gloria Ferrer",
+  "Sonia Garrido", "Tomás Lorenzo", "Amparo Peña", "Óscar Bravo", "Gloria Requena",
 ];
 
 /**
@@ -99,7 +106,7 @@ export const CAMBIOS_DE_ESTADO: { posicion: number; estado: "pausado" | "baja"; 
 /** `usuario+demoNN@dominio` a partir de la Gmail de la cesta (secreto DEMO_CORREO_BASE). */
 export function aliasDeCorreo(base: string, numero: number): string {
   const m = /^([^@+\s]+)(?:\+[^@\s]*)?@([^@\s]+\.[^@\s]+)$/.exec(base.trim());
-  if (!m) throw new Error("DEMO_CORREO_BASE no es una dirección de correo válida");
+  if (!m) throw new ErrorDatosDePrueba("DEMO_CORREO_BASE no es una dirección de correo válida");
   return `${m[1]}+demo${String(numero).padStart(2, "0")}@${m[2]}`.toLowerCase();
 }
 
@@ -150,8 +157,10 @@ export const FAMILIAS: Record<string, FamiliaDePrueba> = {
  * - "cerrada": se envía, responden, se marca lo entregado y se cierra.
  *   `noPueden` dicen que no (y su sustituto confirma); `sinRespuesta` no contestan (y su
  *   sustituto confirma); `sinEntregar` confirmados que no se marcan como entregados.
- * - "enviada": se envía; confirma la mitad, `noPueden` dicen que no y su sustituto queda
- *   esperando; el resto queda esperando.
+ * - "enviada": se envía; `noPueden` dicen que no y su sustituto queda esperando;
+ *   `esperando` no contestan todavía; el resto confirma. Pocos esperando: si nadie
+ *   contesta, la tarea diaria les busca sustituto al vencer el plazo y, el día de la
+ *   entrega, avisa al administrador de cada uno que siga sin cubrir.
  * - "borrador": solo las cestas.
  */
 export type SemanaDePrueba = {
@@ -162,7 +171,7 @@ export type SemanaDePrueba = {
   familias: (keyof typeof FAMILIAS)[];
 } & (
   | { estado: "cerrada"; noPueden: number; sinRespuesta: number; sinEntregar: number }
-  | { estado: "enviada"; noPueden: number }
+  | { estado: "enviada"; noPueden: number; esperando: number }
   | { estado: "borrador" }
 );
 
@@ -170,6 +179,6 @@ export const SEMANAS: SemanaDePrueba[] = [
   { entrega: -35, plazo: -38, familias: ["P01", "P02", "A01"], estado: "cerrada", noPueden: 1, sinRespuesta: 1, sinEntregar: 0 },
   { entrega: -21, plazo: -24, familias: ["P03", "P04", "A02"], estado: "cerrada", noPueden: 0, sinRespuesta: 0, sinEntregar: 0 },
   { entrega: -7, plazo: -10, familias: ["P01", "A03", "P05", "P02"], estado: "cerrada", noPueden: 0, sinRespuesta: 0, sinEntregar: 1 },
-  { entrega: 5, plazo: 2, familias: ["P03", "A01", "P04"], estado: "enviada", noPueden: 1 },
+  { entrega: 5, plazo: 2, familias: ["P03", "A01", "P04"], estado: "enviada", noPueden: 1, esperando: 3 },
   { entrega: 12, plazo: 10, familias: ["P01", "A02", "A03"], estado: "borrador" },
 ];

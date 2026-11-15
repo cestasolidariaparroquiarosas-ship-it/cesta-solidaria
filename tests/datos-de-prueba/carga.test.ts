@@ -4,7 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
-import { cargar, recuentos, TABLAS } from "@/scripts/datos-de-prueba/cargar";
+import { cargar, recuentos, TABLAS, TABLAS_FUERA } from "@/scripts/datos-de-prueba/cargar";
 import { borrar } from "@/scripts/datos-de-prueba/borrar";
 import { esAliasDePrueba } from "@/scripts/datos-de-prueba/datos";
 import { semanaEnCurso, semanasSinCerrar } from "@/lib/dominio/inicio";
@@ -27,6 +27,15 @@ afterAll(async () => {
 
 describe("carga de los datos de prueba", () => {
   let etiquetas: number;
+
+  it("RD1 y RD3: toda tabla de public está clasificada (vaciable o fuera de la carga)", async () => {
+    // Si se añade una tabla y no se clasifica, la carga no la miraría y el borrado podría
+    // dejarla con filas: esta prueba obliga a decidir.
+    const tablas = (await q("select tablename from pg_tables where schemaname = 'public' order by 1")).map((f) =>
+      String(f.tablename),
+    );
+    expect(tablas).toEqual([...TABLAS, ...TABLAS_FUERA].sort());
+  });
 
   it("CA-0201: crea el catálogo, la lista base, los colaboradores y las 5 semanas", async () => {
     etiquetas = Number((await q("select count(*) n from public.etiquetas_exclusion"))[0].n);
@@ -72,6 +81,18 @@ describe("carga de los datos de prueba", () => {
       (await q("select count(*)::int n from public.asignaciones where sustituye_a is not null and estado = 'confirmada'"))[0].n,
     ).toBe(2);
 
+    // Semana 2: todo entregado. Semana 3: un confirmado sin marcar como entregado.
+    const entregas = await q(
+      `select count(*) filter (where a.estado = 'confirmada' and not a.entregado)::int sin_entregar
+       from public.semanas s left join public.asignaciones a on a.semana_id = s.id
+       where s.estado = 'cerrada' group by s.fecha_entrega order by s.fecha_entrega`,
+    );
+    expect(entregas.map((f) => f.sin_entregar)).toEqual([0, 0, 1]);
+
+    // Pausas: una hasta D+30 y otra sin fecha.
+    const pausas = await q("select pausado_hasta::text from public.colaboradores where estado = 'pausado' order by 1 nulls last");
+    expect(pausas.map((f) => f.pausado_hasta)).toEqual([sumarDias(hoyEnMadrid(), 30), null]);
+
     // Semana 4: hay confirmados, esperando, y un sustituto esperando con su plazo.
     const s4 = await q(
       `select a.estado, a.sustituye_a is not null sustituto, a.enviado_en is not null enviado
@@ -81,6 +102,8 @@ describe("carga de los datos de prueba", () => {
     expect(s4.some((a) => a.estado === "pendiente" && !a.sustituto)).toBe(true);
     expect(s4.some((a) => a.estado === "pendiente" && a.sustituto)).toBe(true);
     expect(s4.filter((a) => a.estado === "rechazada")).toHaveLength(1);
+    // Pocos esperando: 3 más el sustituto (spec §2).
+    expect(s4.filter((a) => a.estado === "pendiente")).toHaveLength(4);
     // Constan como enviadas: la tarea diaria no las reenvía al cargar.
     expect(s4.every((a) => a.enviado)).toBe(true);
   });
@@ -153,15 +176,18 @@ describe("carga de los datos de prueba", () => {
   });
 
   it("CA-0205: con un colaborador que no es de prueba, el borrado falla y no cambia nada", async () => {
-    await q("insert into public.colaboradores (nombre, email) values ('Real', 'alguien@otro-dominio.es')");
+    await q("insert into public.colaboradores (nombre, email) values ('Real', 'alguien@example.org')");
     const antes = await recuentos(bd);
     await expect(borrar(bd, { correoBase: BASE })).rejects.toThrow(/no son de prueba/);
     expect(await recuentos(bd)).toEqual(antes);
-    await q("delete from public.colaboradores where email = 'alguien@otro-dominio.es'");
+    await q("delete from public.colaboradores where email = 'alguien@example.org'");
   });
 
-  it("CA-0205: el borrado deja vacías las tablas de la app y conserva las etiquetas", async () => {
+  it("CA-0205: el borrado deja vacías las tablas de la app y conserva las etiquetas y los eventos ajenos", async () => {
+    await q("insert into public.registro_eventos (tipo) values ('correo_prueba')");
     expect(await borrar(bd, { correoBase: BASE })).toEqual(vacia);
+    expect((await q("select count(*)::int n from public.registro_eventos where tipo = 'correo_prueba'"))[0].n).toBe(1);
+    await q("delete from public.registro_eventos where tipo = 'correo_prueba'");
     expect(Number((await q("select count(*) n from public.etiquetas_exclusion"))[0].n)).toBe(etiquetas);
     expect(
       (await q("select count(*)::int n from public.registro_eventos where semana_id is not null or asignacion_id is not null"))[0].n,
