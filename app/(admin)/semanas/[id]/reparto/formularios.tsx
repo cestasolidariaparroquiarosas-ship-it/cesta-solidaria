@@ -65,18 +65,22 @@ export function FormularioMover({
           />
         )}
       </Campo>
-      <Campo etiqueta="A quién" error={errores.destino}>
-        {(props) => (
-          <select {...props} name="destino" defaultValue={v?.destino ?? ""} className={`${ENTRADA} max-w-56`}>
-            <option value="">Elige…</option>
-            {destinos.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.nombre}
-              </option>
-            ))}
-          </select>
-        )}
-      </Campo>
+      {/* min-w-0 y w-full: con nombres largos, el desplegable se recorta en vez de
+          ensanchar la pantalla del móvil (CA-28). */}
+      <div className="min-w-0 flex-1 basis-48">
+        <Campo etiqueta="A quién" error={errores.destino}>
+          {(props) => (
+            <select {...props} name="destino" defaultValue={v?.destino ?? ""} className={`${ENTRADA} w-full`}>
+              <option value="">Elige…</option>
+              {destinos.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.nombre}
+                </option>
+              ))}
+            </select>
+          )}
+        </Campo>
+      </div>
       <button type="submit" disabled={enviando} className={BOTON_SECUNDARIO}>
         Mover
       </button>
@@ -110,23 +114,25 @@ export function FormularioCambiarColaborador({
       noValidate
       aria-label={`Cambiar a ${nombre}`}
     >
-      <Campo etiqueta="Nuevo colaborador" error={errores.colaborador_id}>
-        {(props) => (
-          <select
-            {...props}
-            name="colaborador_id"
-            defaultValue={estado.valores?.colaborador_id ?? ""}
-            className={`${ENTRADA} max-w-full`}
-          >
-            <option value="">Elige…</option>
-            {candidatos.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.texto}
-              </option>
-            ))}
-          </select>
-        )}
-      </Campo>
+      <div className="w-full min-w-0">
+        <Campo etiqueta="Nuevo colaborador" error={errores.colaborador_id}>
+          {(props) => (
+            <select
+              {...props}
+              name="colaborador_id"
+              defaultValue={estado.valores?.colaborador_id ?? ""}
+              className={`${ENTRADA} w-full`}
+            >
+              <option value="">Elige…</option>
+              {candidatos.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.texto}
+                </option>
+              ))}
+            </select>
+          )}
+        </Campo>
+      </div>
       <button type="submit" disabled={enviando} className={BOTON_SECUNDARIO}>
         Cambiar
       </button>

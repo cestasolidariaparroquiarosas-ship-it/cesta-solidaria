@@ -102,8 +102,11 @@ async function proponer(page: Page, semana: string) {
 
 /** Abre el desplegable que contiene el formulario y lo devuelve. */
 async function abrir(page: Page, formulario: string) {
+  // Cerrado, el formulario está oculto y getByRole no lo ve sin includeHidden.
+  const oculto = page.getByRole("form", { name: formulario, includeHidden: true });
+  await page.locator("details", { has: oculto }).locator("summary").click();
   const form = page.getByRole("form", { name: formulario });
-  await page.locator("details", { has: form }).locator("summary").click();
+  await expect(form).toBeVisible();
   return form;
 }
 
