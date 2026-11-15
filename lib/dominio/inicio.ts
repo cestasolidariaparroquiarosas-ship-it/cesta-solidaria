@@ -22,6 +22,21 @@ export function semanaEnCurso<T extends { fecha_entrega: string; estado: EstadoS
   return pasadas[0] ?? null;
 }
 
+/**
+ * Semanas enviadas cuya entrega ya pasó y siguen sin cerrar, aparte de la semana en
+ * curso: falta marcar lo entregado y cerrarlas. Si no, desaparecerían de Inicio en
+ * cuanto existe el borrador de la semana siguiente. La más reciente primero.
+ */
+export function semanasSinCerrar<T extends { id: string; fecha_entrega: string; estado: EstadoSemana }>(
+  semanas: T[],
+  hoy: string,
+  enCurso: { id: string } | null,
+): T[] {
+  return semanas
+    .filter((s) => s.estado === "enviada" && s.fecha_entrega < hoy && s.id !== enCurso?.id)
+    .sort((a, b) => b.fecha_entrega.localeCompare(a.fecha_entrega));
+}
+
 export type Recuento = { confirmadas: number; esperando: number; noPueden: number; entregadas: number };
 
 /** Cuántas confirmadas, esperando respuesta y que no pueden (spec §5.2). */
@@ -54,7 +69,9 @@ export function avisosSemana(d: {
 }): Aviso[] {
   const avisos: Aviso[] = [];
   if (d.estado === "borrador") {
-    if (d.cestas === 0) avisos.push({ tipo: "info", texto: "Añade las cestas de las familias." });
+    if (d.fechaEntrega < d.hoy)
+      avisos.push({ tipo: "error", texto: "La fecha de entrega ya ha pasado: cámbiala o elimina la semana." });
+    else if (d.cestas === 0) avisos.push({ tipo: "info", texto: "Añade las cestas de las familias." });
     else if (d.enReparto === 0) avisos.push({ tipo: "info", texto: "Prepara el reparto." });
     else if (d.noDisponibles > 0)
       avisos.push({ tipo: "error", texto: "En el reparto hay colaboradores que ya no están disponibles: cámbialos." });
@@ -77,11 +94,13 @@ export function avisosSemana(d: {
         tipo: "atencion",
         texto:
           d.sinCubrir === 1
-            ? "Hay alimentos sin cubrir: nadie los lleva."
-            : `Hay alimentos de ${d.sinCubrir} colaboradores sin cubrir: nadie los lleva.`,
+            ? "Un colaborador no puede llevar lo suyo y nadie lo lleva."
+            : `${d.sinCubrir} colaboradores no pueden llevar lo suyo y nadie lo lleva.`,
       });
-    if (d.fechaEntrega <= d.hoy)
-      avisos.push({ tipo: "info", texto: "Cuando acabe la entrega, marca lo entregado y cierra la semana." });
+    if (d.fechaEntrega === d.hoy)
+      avisos.push({ tipo: "info", texto: "Hoy es la entrega: después, marca lo entregado y cierra la semana." });
+    else if (d.fechaEntrega < d.hoy)
+      avisos.push({ tipo: "info", texto: "Ya ha sido la entrega: marca lo entregado y cierra la semana." });
   }
   return avisos;
 }

@@ -76,7 +76,7 @@ export async function cerrarSemanaAccion(semanaId: string, _estado: EstadoEnvio,
   const resultado = await cerrarSemana(await crearClienteServidor(), semanaId);
   if (!resultado.ok) {
     const mensajes = {
-      no_enviada: "Solo se puede cerrar una semana enviada.",
+      no_enviada: "La semana ya está cerrada, o todavía no se ha enviado. Recarga la página.",
       entrega_futura: "La entrega todavía no ha llegado.",
       no_encontrado: MENSAJES.no_encontrado,
       sin_permiso: MENSAJES.sin_permiso,
@@ -93,7 +93,10 @@ export async function cerrarSemanaAccion(semanaId: string, _estado: EstadoEnvio,
 export async function marcarEntregadoAccion(semanaId: string, asignacionId: string, entregado: boolean): Promise<EstadoEnvio> {
   await requerirAdmin();
   const resultado = await marcarEntregado(await crearClienteServidor(), semanaId, asignacionId, entregado);
-  if (!resultado.ok) return { error: MENSAJES.no_encontrado };
+  if (!resultado.ok) {
+    const error = resultado.error;
+    return { error: error === "sin_permiso" || error === "desconocido" ? MENSAJES[error] : MENSAJES.no_encontrado };
+  }
   revalidatePath("/historico");
   revalidatePath("/");
   terminar(semanaId, entregado ? "entregado" : "no_entregado");

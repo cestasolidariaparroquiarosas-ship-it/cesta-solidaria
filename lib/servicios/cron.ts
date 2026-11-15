@@ -77,8 +77,11 @@ export async function tareaDiaria(
   for (const { id } of (porCerrar ?? []) as { id: string }[]) {
     const { error: errorCerrar } = await servicio.rpc("cerrar_semana", { p_semana_id: id });
     if (errorCerrar) {
-      traducirErrorEnvio(errorCerrar);
-      resumen.pendientesParaManana++;
+      // Si otra petición la acaba de cerrar, no queda nada pendiente.
+      if (errorCerrar.hint !== "semana_no_enviada") {
+        traducirErrorEnvio(errorCerrar);
+        resumen.pendientesParaManana++;
+      }
     } else {
       resumen.semanasCerradas++;
     }

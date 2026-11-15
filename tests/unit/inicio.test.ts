@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avisosSemana, recuento, semanaEnCurso } from "@/lib/dominio/inicio";
+import { avisosSemana, recuento, semanaEnCurso, semanasSinCerrar } from "@/lib/dominio/inicio";
 import type { EstadoSemana } from "@/lib/dominio/semanas";
 
 const HOY = "2026-11-18";
@@ -18,6 +18,21 @@ describe("semana en curso (spec §5.2)", () => {
     expect(semanaEnCurso([s("2026-11-07", "enviada"), s("2026-11-14", "enviada"), s("2026-11-21", "cerrada")], HOY)).toEqual(
       s("2026-11-14", "enviada"),
     );
+  });
+
+  it("aparte, las enviadas cuya entrega ya pasó y siguen sin cerrar (aunque haya borrador de la siguiente)", () => {
+    const semanas = [
+      { id: "a", ...s("2026-11-07", "enviada") },
+      { id: "b", ...s("2026-11-14", "enviada") },
+      { id: "c", ...s("2026-11-21", "borrador") },
+      { id: "d", ...s("2026-10-31", "cerrada") },
+    ];
+    const enCurso = semanaEnCurso(semanas, HOY);
+    expect(enCurso?.id).toBe("c");
+    expect(semanasSinCerrar(semanas, HOY, enCurso).map((x) => x.id)).toEqual(["b", "a"]);
+    // Sin borrador, la última pasada es la semana en curso y no se repite.
+    const sinBorrador = semanas.filter((x) => x.id !== "c");
+    expect(semanasSinCerrar(sinBorrador, HOY, semanaEnCurso(sinBorrador, HOY)).map((x) => x.id)).toEqual(["a"]);
   });
 
   it("las cerradas no cuentan", () => {
@@ -62,6 +77,9 @@ describe("avisos de la semana en curso", () => {
       "En el reparto hay colaboradores que ya no están disponibles: cámbialos.",
     ]);
     expect(textos({ plazoVencido: true })).toEqual(["El plazo para responder ya ha pasado: cámbialo antes de enviar."]);
+    expect(textos({ fechaEntrega: "2026-11-14", plazoVencido: true })).toEqual([
+      "La fecha de entrega ya ha pasado: cámbiala o elimina la semana.",
+    ]);
     expect(textos({})).toEqual(["Todo listo para enviar los correos."]);
   });
 
@@ -69,8 +87,12 @@ describe("avisos de la semana en curso", () => {
     expect(textos({ estado: "enviada" })).toEqual([]);
     expect(textos({ estado: "enviada", correosSinEnviar: 2, sinCubrir: 1, fechaEntrega: HOY })).toEqual([
       "2 correos no se han podido enviar.",
-      "Hay alimentos sin cubrir: nadie los lleva.",
-      "Cuando acabe la entrega, marca lo entregado y cierra la semana.",
+      "Un colaborador no puede llevar lo suyo y nadie lo lleva.",
+      "Hoy es la entrega: después, marca lo entregado y cierra la semana.",
+    ]);
+    expect(textos({ estado: "enviada", sinCubrir: 2, fechaEntrega: "2026-11-14" })).toEqual([
+      "2 colaboradores no pueden llevar lo suyo y nadie lo lleva.",
+      "Ya ha sido la entrega: marca lo entregado y cierra la semana.",
     ]);
     expect(avisosSemana({ ...base, estado: "enviada", correosSinEnviar: 1 })[0]).toEqual({
       tipo: "error",

@@ -72,7 +72,11 @@ export default async function PaginaSemana({ params, searchParams }: PageProps<"
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
-      <Volver href="/semanas" texto="Semanas" />
+      {s.estado === "cerrada" ? (
+        <Volver href="/historico" texto="Histórico" />
+      ) : (
+        <Volver href="/semanas" texto="Semanas" />
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-semibold">Entrega del {formatearFecha(s.fecha_entrega)}</h1>
         <EstadoSemanaEtiqueta estado={s.estado} />

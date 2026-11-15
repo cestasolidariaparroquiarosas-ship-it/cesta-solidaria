@@ -3,7 +3,14 @@ import Link from "next/link";
 import { requerirAdmin } from "@/lib/auth";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { esCandidato } from "@/lib/dominio/colaboradores";
-import { avisosSemana, recuento, semanaEnCurso, type Aviso } from "@/lib/dominio/inicio";
+import {
+  avisosSemana,
+  DIAS_PARA_CERRAR,
+  recuento,
+  semanaEnCurso,
+  semanasSinCerrar,
+  type Aviso,
+} from "@/lib/dominio/inicio";
 import { plazoVencido } from "@/lib/dominio/plazos";
 import { formatearFecha, formatearFechaHora, hoyEnMadrid } from "@/lib/fechas";
 import { obtenerReparto } from "@/lib/servicios/reparto";
@@ -27,6 +34,7 @@ export default async function Inicio() {
   const hoy = hoyEnMadrid();
   const semanas = await listarSemanas(cliente);
   const enCurso = semanas.ok ? semanaEnCurso(semanas.valor, hoy) : null;
+  const sinCerrar = semanas.ok ? semanasSinCerrar(semanas.valor, hoy, enCurso) : [];
   const reparto = enCurso ? await obtenerReparto(cliente, enCurso.id) : null;
   const asignaciones = reparto?.ok ? reparto.valor : [];
 
@@ -113,6 +121,27 @@ export default async function Inicio() {
           </>
         )}
       </section>
+
+      {sinCerrar.length > 0 && (
+        <section
+          className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4"
+          aria-label="Semanas sin cerrar"
+        >
+          <h2 className="text-lg font-semibold">Falta cerrar</h2>
+          <p className="text-sm text-amber-950">
+            Ya ha sido la entrega: marca lo entregado y cierra la semana. Si no, se cierra sola a los {DIAS_PARA_CERRAR} días.
+          </p>
+          <ul className="flex flex-col gap-1">
+            {sinCerrar.map((s) => (
+              <li key={s.id}>
+                <Link href={`/semanas/${s.id}`} className="text-sm font-medium underline">
+                  Entrega del {formatearFecha(s.fecha_entrega)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4">
         <h2 className="text-lg font-semibold">Correo</h2>

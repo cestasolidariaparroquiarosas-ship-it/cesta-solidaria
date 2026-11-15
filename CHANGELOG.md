@@ -3,7 +3,7 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
-## [0.9.0] - 2026-11-16
+## [0.9.0] - 2026-11-15
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 8.
 
@@ -23,6 +23,11 @@ Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-ces
   - `cerrar_semana`, que pueden usar el administrador y el cron. Bloquea la semana y exige que esté enviada y que haya llegado la entrega, contando el día en hora de Madrid.
   - `conservar_doce_meses`, que solo puede ejecutar `service_role`. Se puede repetir sin cambiar nada.
 - CA-28: pruebas e2e a 375 px de Inicio, Histórico y una semana cerrada.
+
+### Revisión independiente
+- 1 hallazgo medio y 7 menores, todos corregidos. Conclusiones en el comentario del PR #10.
+  - El medio: si ya existía el borrador de la semana siguiente, la semana recién entregada (sin cerrar) desaparecía de Inicio. Ahora Inicio tiene un apartado «Falta cerrar» con esas semanas.
+  - Los menores: textos de los avisos más claros, mensajes de error más precisos, volver al Histórico desde una semana cerrada y una prueba del cron que, con el cierre automático, ya no probaba lo que decía.
 
 ## [0.8.0] - 2026-11-15
 

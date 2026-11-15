@@ -132,7 +132,8 @@ test.describe("inicio e histórico en el móvil", () => {
 
   test("CA-28: Inicio, Histórico y una semana cerrada no desbordan a 375 px", async ({ page }) => {
     const { id } = await semanaPasada();
-    await clienteServicio().rpc("cerrar_semana", { p_semana_id: id });
+    const { error } = await clienteServicio().rpc("cerrar_semana", { p_semana_id: id });
+    expect(error).toBeNull();
     await entrarComoAdmin(page);
     for (const ruta of ["/", "/historico", `/semanas/${id}`]) {
       await page.goto(ruta);
