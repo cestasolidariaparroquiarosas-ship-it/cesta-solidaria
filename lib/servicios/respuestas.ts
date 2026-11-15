@@ -94,7 +94,7 @@ export async function leerColaboradorDelToken(
  * Candidatos para sustituir en una semana, en el orden de R2.4, y el plazo de la
  * asignación nueva. La función SQL salta a quien ya tenga asignación esa semana.
  */
-async function datosReasignacion(
+export async function datosReasignacion(
   cliente: SupabaseClient,
   semanaId: string,
   ahora: Date,
@@ -115,7 +115,7 @@ async function datosReasignacion(
  * Tras una reasignación: si hay asignación nueva, su correo sale en el momento
  * (CA-17); si no, se avisa al administrador (R4.6).
  */
-async function despuesDeReasignar(
+export async function despuesDeReasignar(
   cliente: SupabaseClient,
   origen: string,
   nueva: string | null,
