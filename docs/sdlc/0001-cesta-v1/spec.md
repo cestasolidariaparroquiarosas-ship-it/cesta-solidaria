@@ -220,6 +220,14 @@ Todas las tablas tienen `id` (uuid), `creado_en` y `actualizado_en`.
   3. Lo guarda como artefacto de GitHub Actions durante 30 días.
 - La misma ejecución hace una consulta al proyecto de pruebas para que no se pause.
 
+> **Cambio del 2026-11-15 (PR 9, v1.0.0):** el repositorio es público (decisión del 2026-11-14), y en un repositorio público cualquiera puede descargar los artefactos de Actions. Por eso:
+> - La copia vive en el repositorio privado `cesta-copias` (workflow `copia`) y no en `backup.yml`.
+> - Copia los datos de `public` y `auth`.
+> - La consulta diaria a pruebas la hace `mantener-activo.yml`.
+> - Para CA-34, la restauración se comprueba **cada día** en un Supabase desechable y no en `cesta-pruebas`, para no dejar allí datos personales reales.
+>
+> Detalles en `trazabilidad.md`. **Aprobado por el responsable el 2026-11-15.**
+
 ### Puesta en marcha (una sola vez)
 
 Esto no lo puede hacer Claude solo, porque son tus cuentas. Puedo guiarte paso a paso o hacerlo en el navegador con tu sesión iniciada.

@@ -3,6 +3,28 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [1.0.0] - 2026-11-15
+
+Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 9. Primera versión completa: todos los CA del spec tienen su comprobación ([trazabilidad](docs/sdlc/0001-cesta-v1/trazabilidad.md)).
+
+### Añadido
+- **Guía de uso** para el responsable (`docs/guia-de-uso.md`): preparación del catálogo, el trabajo de cada semana, lo que hace la app sola, colaboradores, protección de datos y qué hacer si algo va mal.
+- **Trazabilidad** (`docs/sdlc/0001-cesta-v1/trazabilidad.md`): cada CA con las pruebas que lo nombran o la comprobación de operación que lo cubre (CA-30 a CA-34).
+- **Copias de seguridad (CA-34)** en el repositorio privado `cesta-copias` (workflow `copia`):
+  - volcado diario de producción, cifrado con AES-256 y guardado 30 días;
+  - en la misma ejecución, la copia cifrada se descifra y se restaura en un Supabase desechable, y se compara cuántas filas tiene cada tabla con las del volcado;
+  - después comprueba `scripts/comprobar-rls.sql` y que los permisos, la RLS y las políticas son idénticos a los de producción (`scripts/huella-permisos.sql`, nuevo);
+  - no se restaura en `cesta-pruebas`, para no dejar allí datos personales reales (ver la nota de la trazabilidad).
+- `scripts/preparar-restauracion.sql`: al restaurar una copia en un Supabase nuevo, quita antes sus privilegios por defecto. Sin esto, `anon` y `authenticated` recibían permisos de más sobre todas las tablas y funciones restauradas (lo detectó la primera comprobación).
+- La copia guarda `migraciones.txt`, y `docs/operacion.md` explica cómo anotarlas con `supabase migration repair` al restaurar en un proyecto nuevo.
+- CA-33: republicación a mano de una etiqueta anterior con el workflow de despliegue (ver la trazabilidad).
+
+### Quitado
+- `.github/workflows/backup.yml`, que estaba desactivado: en un repositorio público, cualquiera puede descargar los artefactos de Actions. Lo sustituye el workflow `copia` de `cesta-copias`. La consulta diaria al proyecto de pruebas ya la hace `mantener-activo.yml`.
+
+### Cambiado
+- `docs/operacion.md`: sección de copias de seguridad, paso 10 de la puesta en marcha (secretos de `cesta-copias`), restauración desde `cesta-copias` y estado actual. `CLAUDE.md`: lista de workflows.
+
 ## [0.9.0] - 2026-11-15
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 8.
