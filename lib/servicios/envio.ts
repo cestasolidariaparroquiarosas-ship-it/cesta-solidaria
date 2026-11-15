@@ -94,13 +94,25 @@ async function registrar(
 // Envío
 // ---------------------------------------------------------------------------
 
-export type ResultadoEnvio = "enviado" | "fallido" | "no_aplica";
+/** "no_aplica": ya enviado, otra petición lo está enviando, o el colaborador está de baja. */
+export type ResultadoEnvio = "enviado" | "no_aplica" | { fallo: string };
+
+/** Una reserva más antigua que esto se da por abandonada (la función se cortó a mitad). */
+const RESERVA_CADUCA_MS = 5 * 60_000;
 
 /**
- * Envía el correo de una asignación pendiente que aún no lo tiene. Antes de enviar,
- * la "reserva" anotando enviado_en solo si estaba vacío: así, si dos peticiones lo
- * intentan a la vez, solo una envía (CA-14: un solo correo). Si el envío falla, se
- * deshace la reserva y se anota el código del error.
+ * Errores que no son de un correo concreto sino de la conexión o de la cuenta: si sale
+ * uno, los demás correos fallarán igual y solo harían esperar (límite de tiempo).
+ */
+const ERRORES_DE_CONEXION = new Set(["EAUTH", "ECONNECTION", "ETIMEDOUT", "ESOCKET", "EDNS", "535", "421", "454"]);
+
+/**
+ * Envía el correo de una asignación pendiente que aún no lo tiene.
+ * - Antes de enviar la "reserva" (envio_reservado_en), solo si no hay otra reserva
+ *   reciente: si dos peticiones lo intentan a la vez, solo una envía (CA-14).
+ * - enviado_en solo se anota cuando el correo ha salido. Si el envío falla, se quita la
+ *   reserva y se anota el código del error. Si la función se corta a mitad, la reserva
+ *   caduca y el correo se puede reintentar.
  */
 export async function enviarAsignacion(
   cliente: SupabaseClient,
@@ -109,21 +121,23 @@ export async function enviarAsignacion(
   urlBase: string,
 ): Promise<ResultadoEnvio> {
   if (!UUID.test(asignacionId)) return "no_aplica";
+  const ahora = new Date();
+  const caducada = new Date(ahora.getTime() - RESERVA_CADUCA_MS).toISOString();
   const { data: reservada, error: errorReserva } = await cliente
     .from("asignaciones")
-    .update({ enviado_en: new Date().toISOString() })
+    .update({ envio_reservado_en: ahora.toISOString() })
     .eq("id", asignacionId)
     .eq("estado", "pendiente")
     .is("enviado_en", null)
+    .or(`envio_reservado_en.is.null,envio_reservado_en.lt."${caducada}"`)
     .select("id");
   if (errorReserva) {
     traducirErrorEnvio(errorReserva);
-    return "fallido";
+    return { fallo: "base_de_datos" };
   }
   if (!reservada?.length) return "no_aplica";
 
-  const deshacer = () =>
-    cliente.from("asignaciones").update({ enviado_en: null }).eq("id", asignacionId).eq("estado", "pendiente");
+  const deshacer = () => cliente.from("asignaciones").update({ envio_reservado_en: null }).eq("id", asignacionId);
 
   const { data, error } = await cliente
     .from("asignaciones")
@@ -132,7 +146,7 @@ export async function enviarAsignacion(
     .single();
   if (error || !data) {
     await deshacer();
-    return "fallido";
+    return { fallo: "base_de_datos" };
   }
   const a = data as unknown as {
     token: string;
@@ -176,35 +190,60 @@ export async function enviarAsignacion(
     console.error(`No se ha podido enviar un correo de asignación (código ${codigo})`);
     await deshacer();
     await registrar(cliente, { tipo: "error_envio", semana_id: a.semana_id, asignacion_id: asignacionId, detalle: { codigo } });
-    return "fallido";
+    return { fallo: codigo };
   }
+  const { error: errorMarca } = await cliente
+    .from("asignaciones")
+    .update({ enviado_en: new Date().toISOString(), envio_reservado_en: null })
+    .eq("id", asignacionId);
+  // El correo ya ha salido: si esto falla, la reserva caduca y podría repetirse. Se anota.
+  if (errorMarca) console.error(`Correo enviado sin poder anotarlo (código ${errorMarca.code})`);
   await registrar(cliente, { tipo: "correo_enviado", semana_id: a.semana_id, asignacion_id: asignacionId });
   return "enviado";
 }
 
-/** Envía los correos pendientes de una semana (los que aún no tienen enviado_en). */
+/**
+ * Envía los correos pendientes de una semana: los que aún no tienen enviado_en y
+ * cuyo plazo no ha vencido (un correo que pide responder antes de una fecha pasada
+ * solo confunde). Se para al primer error de conexión, o si se acerca el límite de
+ * tiempo de la petición: los que quedan se cuentan como fallidos y se reintentan después.
+ */
 export async function enviarPendientes(
   cliente: SupabaseClient,
   semanaId: string,
   correo: Correo,
   urlBase: string,
+  { limiteMs = 40_000 }: { limiteMs?: number } = {},
 ): Promise<Resultado<{ enviados: number; fallidos: number }>> {
   if (!UUID.test(semanaId)) return fallo("no_encontrado");
+  const inicio = Date.now();
   const { data, error } = await cliente
     .from("asignaciones")
     .select("id")
     .eq("semana_id", semanaId)
     .eq("estado", "pendiente")
     .is("enviado_en", null)
+    .gt("plazo", new Date().toISOString())
     .order("creado_en");
   if (error) return fallo(traducirErrorEnvio(error));
 
+  const ids = (data as { id: string }[]).map((a) => a.id);
   let enviados = 0;
   let fallidos = 0;
-  for (const { id } of data as { id: string }[]) {
+  for (const [i, id] of ids.entries()) {
+    if (Date.now() - inicio > limiteMs) {
+      fallidos += ids.length - i;
+      break;
+    }
     const r = await enviarAsignacion(cliente, id, correo, urlBase);
     if (r === "enviado") enviados++;
-    if (r === "fallido") fallidos++;
+    if (typeof r === "object") {
+      fallidos++;
+      if (ERRORES_DE_CONEXION.has(r.fallo)) {
+        fallidos += ids.length - i - 1;
+        break;
+      }
+    }
   }
   return ok({ enviados, fallidos });
 }

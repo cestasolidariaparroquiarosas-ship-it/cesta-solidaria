@@ -32,8 +32,9 @@ export function Envio({ semana, asignaciones }: { semana: Semana; asignaciones: 
           <p className="text-sm text-stone-600">Primero prepara el reparto.</p>
         ) : noDisponibles.length > 0 ? (
           <p role="alert" className="text-sm font-medium text-red-800">
-            En el reparto hay {noDisponibles.length === 1 ? "un colaborador" : `${noDisponibles.length} colaboradores`} que
-            ya no está disponible: cámbialo antes de enviar.
+            {noDisponibles.length === 1
+              ? "En el reparto hay un colaborador que ya no está disponible: cámbialo antes de enviar."
+              : `En el reparto hay ${noDisponibles.length} colaboradores que ya no están disponibles: cámbialos antes de enviar.`}
           </p>
         ) : (
           <FormularioEnviar accion={enviarSemanaAccion.bind(null, semana.id)} colaboradores={propuestas.length} />
@@ -44,6 +45,9 @@ export function Envio({ semana, asignaciones }: { semana: Semana; asignaciones: 
 
   const nombrePorId = new Map(asignaciones.map((a) => [a.id, nombreVisible(a.colaborador)]));
   const cuenta = (estado: AsignacionReparto["estado"]) => asignaciones.filter((a) => a.estado === estado).length;
+  const confirmadas = cuenta("confirmada");
+  const esperando = cuenta("pendiente");
+  const noPueden = cuenta("rechazada") + cuenta("sin_respuesta");
   const sinEnviar = asignaciones.filter((a) => a.estado === "pendiente" && !a.enviado_en).length;
   // Rechazadas o sin respuesta que aún tienen alimentos: nadie los lleva (R4.6).
   const sinCubrir = (a: AsignacionReparto) =>
@@ -52,8 +56,8 @@ export function Envio({ semana, asignaciones }: { semana: Semana; asignaciones: 
   return (
     <>
       <p className="text-sm">
-        {cuenta("confirmada")} confirmada{cuenta("confirmada") === 1 ? "" : "s"} · {cuenta("pendiente")} esperando
-        respuesta · {cuenta("rechazada") + cuenta("sin_respuesta")} no pueden o no respondieron
+        {confirmadas} confirmada{confirmadas === 1 ? "" : "s"} · {esperando} esperando respuesta · {noPueden}{" "}
+        {noPueden === 1 ? "no puede o no respondió" : "no pueden o no respondieron"}
       </p>
       {sinEnviar > 0 && (
         <div role="alert" className="flex flex-col gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm">

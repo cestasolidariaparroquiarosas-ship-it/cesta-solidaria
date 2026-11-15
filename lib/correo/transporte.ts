@@ -34,9 +34,11 @@ export function crearCorreo(config: ConfigCorreo): Correo {
     port: config.port,
     secure: config.secure,
     auth: config.user ? { user: config.user, pass: config.pass } : undefined,
-    connectionTimeout: 15_000,
-    greetingTimeout: 15_000,
-    socketTimeout: 30_000,
+    // Cortos: las páginas tienen un límite de tiempo (maxDuration), y si Gmail no
+    // responde es mejor fallar pronto, anotarlo y reintentar.
+    connectionTimeout: 8_000,
+    greetingTimeout: 8_000,
+    socketTimeout: 15_000,
   });
 
   return {

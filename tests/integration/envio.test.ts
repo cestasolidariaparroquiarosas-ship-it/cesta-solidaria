@@ -265,7 +265,7 @@ describe("envío y respuestas", () => {
     expect(nuevas!.map((n) => n.colaborador_id)).not.toContain(col.Bea.id);
   });
 
-  it("R4.6: si no queda nadie, el administrador recibe un aviso y los alimentos quedan sin cubrir; luego se puede buscar sustituto", async () => {
+  it("CA-21 (R4.6, al rechazar): si no queda nadie, el administrador recibe un aviso y los alimentos quedan sin cubrir; luego se puede buscar sustituto", async () => {
     // Todos los candidatos que haya ahora en la base de datos, con 1 arroz cada uno.
     const candidatos = await listarCandidatos(admin);
     if (!candidatos.ok) throw new Error(candidatos.error);
@@ -358,8 +358,26 @@ describe("envío y respuestas", () => {
     const { data: eventos } = await servicio.from("registro_eventos").select("detalle").eq("asignacion_id", a.id).eq("tipo", "error_envio");
     expect(eventos).toEqual([{ detalle: { codigo: "535" } }]);
 
+    // Una reserva reciente (otra petición enviándolo ahora mismo) no se pisa...
+    await servicio.from("asignaciones").update({ envio_reservado_en: new Date().toISOString() }).eq("id", a.id);
+    expect(await enviarPendientes(admin, id, correo, URL_APP)).toEqual({ ok: true, valor: { enviados: 0, fallidos: 0 } });
+    // ...pero una abandonada (la función se cortó a mitad) caduca y se reintenta.
+    const antigua = new Date(Date.now() - 10 * 60_000).toISOString();
+    await servicio.from("asignaciones").update({ envio_reservado_en: antigua }).eq("id", a.id);
     expect(await enviarPendientes(admin, id, correo, URL_APP)).toEqual({ ok: true, valor: { enviados: 1, fallidos: 0 } });
-    expect((await asignacionDe(id, col.Carmen.id)).enviado_en).not.toBeNull();
+    const enviada = await asignacionDe(id, col.Carmen.id);
+    expect(enviada.enviado_en).not.toBeNull();
+    // Un solo correo con su enlace (CA-14).
+    expect((await correosPara(col.Carmen.email)).filter((c) => c.Text.includes(enviada.token))).toHaveLength(1);
+  });
+
+  it("no se reenvía un correo cuyo plazo ya ha vencido", async () => {
+    const { id } = await semanaConReparto({ Dora: 1 });
+    const fallon: Correo = { admin: ADMIN, cerrar() {}, async enviar() { throw new ErrorEnvio("ECONNECTION"); } };
+    await enviarSemana(admin, id, fallon, URL_APP);
+    const a = await asignacionDe(id, col.Dora.id);
+    await servicio.from("asignaciones").update({ plazo: new Date(Date.now() - 60_000).toISOString() }).eq("id", a.id);
+    expect(await enviarPendientes(admin, id, correo, URL_APP)).toEqual({ ok: true, valor: { enviados: 0, fallidos: 0 } });
   });
 
   it("CA-23: sin rol de administrador no se envía; y las funciones de los enlaces solo las usa el servidor", async () => {

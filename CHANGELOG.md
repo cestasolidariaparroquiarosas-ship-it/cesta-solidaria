@@ -24,23 +24,26 @@ Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-ces
 - **Baja desde el correo** `/baja/[token]` (R5.1, CA-22): tras confirmar en la página, el colaborador pasa a "de baja". Sus asignaciones pendientes se tratan como un "no puedo" para que alguien las cubra; las confirmadas se mantienen.
 - **Seguimiento** en el paso 4 de la semana: el estado de cada colaborador (esperando respuesta, confirmada, no puede, sin respuesta), a quién sustituye, los correos que no salieron con "Volver a intentarlo", y lo que está sin cubrir.
 - **Correo de prueba** en Inicio, para comprobar la configuración de Gmail.
-- Migración `20261115200000_envio_respuestas.sql`: `enviar_semana`, `responder_asignacion`, `buscar_sustituto` y `dar_de_baja`.
+- Migración `20261115200000_envio_respuestas.sql`: columna `asignaciones.envio_reservado_en` y funciones `enviar_semana`, `responder_asignacion`, `buscar_sustituto` y `dar_de_baja`.
   - Las dos de los enlaces solo las puede ejecutar el servidor con la clave secreta.
   - `enviar_semana` comprueba que el reparto esté completo, que el plazo no haya pasado y que nadie del reparto esté de baja o en pausa (CA-03).
 - Correo con Nodemailer: Gmail en producción y Mailpit en local y en CI. Las pruebas de integración leen los correos de Mailpit.
+
+### Revisión independiente
+- [Informe](docs/sdlc/0001-cesta-v1/revision-pr6.md): 1 hallazgo medio y 8 menores, todos corregidos. El medio: si Vercel cortaba la función a mitad de un envío, la asignación podía quedar como enviada sin que el correo hubiera salido. Ahora la reserva del envío va en su propia columna (`envio_reservado_en`), caduca a los 5 minutos, y `enviado_en` solo se anota cuando el correo ha salido.
 
 ### Pendientes resueltos
 - **De la 0.6.0:** "Enviar" bloquea la semana (`FOR UPDATE`), comprueba el reparto y no envía asignaciones sin colaborador.
 - **De la 0.3.0:** CA-03 completo. Se comprueba el estado del colaborador justo antes de cada correo, y se decide qué pasa con sus asignaciones al darse de baja desde el enlace.
 
 ### Notas de diseño
-- Primero se guarda y después se envía (plan §4). Antes de enviar, cada correo se "reserva" anotando `enviado_en` solo si estaba vacío, para que dos envíos a la vez no manden dos correos (CA-14). Si falla, se deshace y se anota `error_envio`, solo con el código.
+- Primero se guarda y después se envía (plan §4). Antes de enviar, cada correo se "reserva" (`envio_reservado_en`) si no hay otra reserva reciente, para que dos envíos a la vez no manden dos correos (CA-14). Si falla, se quita la reserva y se anota `error_envio`, solo con el código. El envío de una semana se para al primer error de conexión o cerca del límite de tiempo: lo que queda se reintenta.
 - El enlace de baja usa el token de la asignación: identifica al colaborador sin añadir otro dato.
 - En las vistas previas de Vercel, los enlaces usan la dirección que pone Vercel (`VERCEL_URL`) si no hay `APP_URL`.
 - El reparto marca a quien ya no está disponible (por ejemplo, porque se dio de baja desde un correo de otra semana) para cambiarlo antes de enviar.
 
 ### Pendiente para el PR 7
-- Cron diario: pasar a "sin respuesta" las asignaciones con el plazo vencido y reasignarlas con `privado.reasignar`, reintentar los correos sin `enviado_en` y avisar al administrador (CA-20, CA-21, CA-26, CA-27). Necesita `CRON_SECRET`.
+- Cron diario: pasar a "sin respuesta" las asignaciones con el plazo vencido y reasignarlas con `privado.reasignar` (que ya bloquea la semana), reintentar los correos sin `enviado_en` con `enviarPendientes` y avisar al administrador (CA-20, CA-21, CA-26, CA-27). Necesita `CRON_SECRET`.
 - No reasignar en semanas cuya entrega ya ha pasado.
 
 ## [0.6.0] - 2026-11-15

@@ -155,6 +155,9 @@ export async function responder(
   const ahora = new Date();
   const reasignacion =
     respuesta === "no" ? await datosReasignacion(servicio, asignacion.semana_id as string, ahora) : null;
+  // Sin la lista de candidatos no se guarda el "no": se perdería la reasignación. Mejor
+  // un error y que vuelva a pulsar.
+  if (respuesta === "no" && !reasignacion) throw new Error("No se han podido leer los candidatos");
   const plazo = reasignacion?.plazo ?? ahora;
 
   const { data, error } = await servicio.rpc("responder_asignacion", {

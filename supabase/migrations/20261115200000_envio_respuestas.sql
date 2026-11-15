@@ -15,6 +15,16 @@
 -- asignación esa semana.
 
 -- ---------------------------------------------------------------------------
+-- 0. Reserva del envío de un correo (plan §4).
+--    Antes de enviar, la app anota envio_reservado_en, solo si no hay otra reserva
+--    reciente: así dos envíos a la vez no mandan dos correos (CA-14). enviado_en solo se
+--    anota cuando el correo ha salido. Si la función se corta a mitad (límite de tiempo
+--    de Vercel), la reserva caduca a los pocos minutos y el correo se puede reintentar.
+-- ---------------------------------------------------------------------------
+
+alter table public.asignaciones add column envio_reservado_en timestamptz;
+
+-- ---------------------------------------------------------------------------
 -- 1. ¿Sigue siendo candidato? (R2.3, CA-02, CA-03). La misma regla que esCandidato en
 --    lib/dominio/colaboradores.ts: aquí es la última comprobación, justo al asignar.
 -- ---------------------------------------------------------------------------
@@ -116,7 +126,7 @@ grant execute on function public.enviar_semana(uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 3. Reasignar los alimentos de una asignación rechazada o sin respuesta (R4.4).
---    Quien llama ya ha bloqueado la semana. Mueve los alimentos a una asignación
+--    Bloquea la semana (FOR UPDATE). Mueve los alimentos a una asignación
 --    nueva, pendiente, para el primer candidato de la lista que siga disponible y no
 --    tenga asignación esa semana. Si no hay nadie, o el plazo ya ha pasado (no queda
 --    tiempo antes de la entrega), los alimentos se quedan en la asignación original,
@@ -135,9 +145,10 @@ declare
   v_colaborador uuid;
   v_nueva uuid;
 begin
-  select a.semana_id, s.fecha_entrega into v_semana, v_fecha
-  from public.asignaciones a join public.semanas s on s.id = a.semana_id
-  where a.id = p_asignacion_id;
+  select a.semana_id into v_semana from public.asignaciones a where a.id = p_asignacion_id;
+  -- Bloquea la semana aunque quien llama ya lo haya hecho (en la misma transacción no
+  -- cuesta nada): así ningún llamador futuro, como el cron, se lo puede saltar.
+  v_fecha := privado.bloquear_semana_enviada(v_semana);
 
   if p_plazo is null or p_plazo <= now() then
     insert into public.registro_eventos (tipo, semana_id, asignacion_id, detalle)
@@ -145,14 +156,20 @@ begin
     return null;
   end if;
 
-  select u.id into v_colaborador
+  -- La regla de R2.3 va escrita aquí (la misma que privado.es_candidato) para poder
+  -- bloquear la fila del colaborador (FOR SHARE): si a la vez se está dando de baja,
+  -- se espera a que termine, se vuelve a evaluar la fila y se salta.
+  select c.id into v_colaborador
   from unnest(coalesce(p_candidatos, '{}')) with ordinality as u (id, orden)
-  where privado.es_candidato(u.id, v_fecha)
+  join public.colaboradores c on c.id = u.id
+  where (c.estado = 'activo'
+         or (c.estado = 'pausado' and c.pausado_hasta is not null and c.pausado_hasta < v_fecha))
     and not exists (
-      select 1 from public.asignaciones a where a.semana_id = v_semana and a.colaborador_id = u.id
+      select 1 from public.asignaciones a where a.semana_id = v_semana and a.colaborador_id = c.id
     )
   order by u.orden
-  limit 1;
+  limit 1
+  for share of c;
 
   if v_colaborador is null then
     insert into public.registro_eventos (tipo, semana_id, asignacion_id, detalle)
