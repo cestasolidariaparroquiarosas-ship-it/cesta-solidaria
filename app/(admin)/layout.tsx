@@ -5,6 +5,7 @@ import { cerrarSesion } from "@/app/login/acciones";
 // Las secciones se irán activando en los siguientes PR del plan.
 const SECCIONES = [
   { href: "/", nombre: "Inicio" },
+  { href: "/semanas", nombre: "Semanas" },
   { href: "/colaboradores", nombre: "Colaboradores" },
   { href: "/alimentos", nombre: "Alimentos" },
   { href: "/listas", nombre: "Listas base" },
