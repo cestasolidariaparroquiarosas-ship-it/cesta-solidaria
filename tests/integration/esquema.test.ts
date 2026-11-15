@@ -271,7 +271,7 @@ describe("esquema: Row Level Security y restricciones", () => {
       expect(error?.code).toBe("23514");
     });
 
-    it("no se puede quitar de una cesta un alimento que ya tiene colaborador; borrar la semana sí", async () => {
+    it("quitar un alimento repartido: con reparto propuesto, se descarta; ya enviado, falla; borrar la semana sí", async () => {
       const semana = await crearSemana();
       const { data: alimento } = await servicio
         .from("alimentos")
@@ -288,13 +288,26 @@ describe("esquema: Row Level Security y restricciones", () => {
         .insert({ cesta_id: cesta!.id, alimento_id: alimento!.id, cantidad: 1, precio_unitario: 1.8 })
         .select("id")
         .single();
-      const { data: asignacion } = await admin
-        .from("asignaciones")
-        .insert({ semana_id: semana })
-        .select("id")
-        .single();
-      await admin.from("asignacion_items").insert({ asignacion_id: asignacion!.id, cesta_item_id: item!.id, cantidad: 1 });
+      const repartir = async (estado: "propuesta" | "pendiente") => {
+        const { data: asignacion } = await admin
+          .from("asignaciones")
+          .insert({ semana_id: semana, estado, plazo: new Date().toISOString() })
+          .select("id")
+          .single();
+        await admin.from("asignacion_items").insert({ asignacion_id: asignacion!.id, cesta_item_id: item!.id, cantidad: 1 });
+        return asignacion!.id as string;
+      };
 
+      // Reparto propuesto (semana en preparación): cambiar la cesta lo descarta
+      // (migración del reparto, PR 5).
+      const propuesta = await repartir("propuesta");
+      expect((await admin.from("cesta_items").update({ cantidad: 2 }).eq("id", item!.id)).error).toBeNull();
+      const { data: queda } = await admin.from("asignaciones").select("id").eq("id", propuesta);
+      expect(queda).toEqual([]);
+
+      // Una asignación ya enviada no se descarta: la clave ajena impide quitar el alimento.
+      // (En la app no puede pasar: con la semana enviada, las cestas no se cambian.)
+      await repartir("pendiente");
       const { error } = await admin.from("cesta_items").delete().eq("id", item!.id);
       expect(error?.code).toBe("23503");
 

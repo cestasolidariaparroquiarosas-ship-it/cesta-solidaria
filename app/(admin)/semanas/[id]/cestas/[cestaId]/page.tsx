@@ -7,6 +7,7 @@ import { choquesEnCesta, costeCesta, proponerCesta, textoSin, type Propuesta } f
 import { semanaEditable } from "@/lib/dominio/semanas";
 import { formatearFecha } from "@/lib/fechas";
 import { listarAlimentos, listarEtiquetas, listarListas } from "@/lib/servicios/catalogo";
+import { tieneReparto } from "@/lib/servicios/reparto";
 import { obtenerCesta, plantillaDeLista } from "@/lib/servicios/semanas";
 import {
   anadirACestaAccion,
@@ -37,11 +38,12 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
   const { aviso, quitados: quitadosParam } = await searchParams;
 
   const cliente = await crearClienteServidor();
-  const [cesta, etiquetas, listas, alimentos] = await Promise.all([
+  const [cesta, etiquetas, listas, alimentos, hayReparto] = await Promise.all([
     obtenerCesta(cliente, cestaId),
     listarEtiquetas(cliente),
     listarListas(cliente),
     listarAlimentos(cliente, { incluirInactivos: true }),
+    tieneReparto(cliente, id),
   ]);
   if (!cesta.ok) {
     if (cesta.error === "no_encontrado") notFound();
@@ -95,6 +97,12 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
         </p>
       </div>
       <Aviso clave={aviso} textos={AVISOS} />
+      {editable && hayReparto && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          Esta semana ya tiene un reparto propuesto. Si cambias los alimentos de las cestas, se descarta y habrá que
+          volver a proponerlo.
+        </p>
+      )}
       {quitadosAhora.length > 0 && (
         <p className="text-sm text-emerald-900">
           Quitados: {quitadosAhora.map((a) => `${a.nombre} (${a.unidad})`).join(", ")}.

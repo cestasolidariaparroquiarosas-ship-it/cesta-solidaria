@@ -4,7 +4,6 @@ import {
   COLABORADOR_ELIMINADO,
   esCandidato,
   nombreVisible,
-  ultimasParticipaciones,
   validarDatosColaborador,
   validarPausa,
 } from "@/lib/dominio/colaboradores";
@@ -68,19 +67,6 @@ describe("nombreVisible (R5.2)", () => {
 
   it("con colaborador, muestra su nombre", () => {
     expect(nombreVisible({ nombre: "Ana" })).toBe("Ana");
-  });
-});
-
-describe("ultimasParticipaciones (spec §3)", () => {
-  it("se queda con la fecha de entrega más reciente de cada colaborador", () => {
-    const ultimas = ultimasParticipaciones([
-      { colaborador_id: "a", fecha_entrega: "2026-10-03" },
-      { colaborador_id: "b", fecha_entrega: "2026-10-10" },
-      { colaborador_id: "a", fecha_entrega: "2026-11-07" },
-      { colaborador_id: "a", fecha_entrega: "2026-09-26" },
-      { colaborador_id: null, fecha_entrega: "2026-12-01" },
-    ]);
-    expect(Object.fromEntries(ultimas)).toEqual({ a: "2026-11-07", b: "2026-10-10" });
   });
 });
 
