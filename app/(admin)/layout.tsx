@@ -6,6 +6,7 @@ import { cerrarSesion } from "@/app/login/acciones";
 const SECCIONES = [
   { href: "/", nombre: "Inicio" },
   { href: "/semanas", nombre: "Semanas" },
+  { href: "/historico", nombre: "Histórico" },
   { href: "/colaboradores", nombre: "Colaboradores" },
   { href: "/alimentos", nombre: "Alimentos" },
   { href: "/listas", nombre: "Listas base" },

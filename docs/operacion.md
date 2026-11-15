@@ -121,5 +121,7 @@ Si un colaborador pide que se borren sus datos, en Colaboradores → su ficha �
   1. Una consulta a la base de datos, para que Supabase no pause el proyecto (CA-27).
   2. Las asignaciones pendientes con el plazo vencido pasan a "sin respuesta" y sus alimentos van al siguiente colaborador disponible, que recibe su correo. Si no queda nadie, avisa a `ADMIN_EMAIL` (CA-20, CA-21). Si la entrega ya pasó, solo lo anota.
   3. Reintenta los correos que no salieron.
+  4. Cierra las semanas enviadas a los 7 días de la entrega, si nadie lo ha hecho (lo que siguiera esperando respuesta queda "sin respuesta").
+  5. Conservación (spec §10): en las semanas cerradas hace más de 12 meses, el identificador de cada familia pasa a "Cesta n.º 1", "Cesta n.º 2"…
 - Sin la cabecera `Authorization: Bearer <CRON_SECRET>`, que Vercel añade sola, responde 401 y no hace nada (CA-26). Si se cambia `CRON_SECRET`, vale con cambiarlo en Vercel y volver a desplegar.
 - **Ver si ha funcionado:** Vercel → proyecto → Settings → Cron Jobs (botón "Run" para lanzarlo a mano) y los logs de la función. La respuesta es un resumen con números, sin nombres ni correos.

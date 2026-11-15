@@ -176,7 +176,8 @@ describe("tarea diaria", () => {
 
   it("si la entrega ya pasó, solo se anota «sin respuesta»: ni reasigna ni avisa", async () => {
     const avisosAntes = (await correosPara(ADMIN)).length;
-    const { asignaciones } = await semanaEnviada(sumarDias(hoyEnMadrid(), -3 - Math.floor(Math.random() * 30_000)), {
+    // Entre 3 y 6 días atrás: a partir de 7 la cerraría antes (cierre automático).
+    const { asignaciones } = await semanaEnviada(sumarDias(hoyEnMadrid(), -3 - Math.floor(Math.random() * 4)), {
       Dora: -100,
     });
     await tareaDiaria(servicio, correo, URL_APP);

@@ -32,6 +32,9 @@ const AVISOS = {
   reenviados: "Correos enviados.",
   reenvio_con_fallos: "Algunos correos siguen sin poder enviarse. Comprueba la configuración del correo.",
   sustituto: "Sustituto encontrado: ya tiene su correo.",
+  cerrada: "Semana cerrada: ya está en el histórico.",
+  entregado: "Marcado como entregado.",
+  no_entregado: "Quitada la marca de entregado.",
 };
 
 function personas(adultos: number, ninos: number): string {
@@ -69,7 +72,11 @@ export default async function PaginaSemana({ params, searchParams }: PageProps<"
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
-      <Volver href="/semanas" texto="Semanas" />
+      {s.estado === "cerrada" ? (
+        <Volver href="/historico" texto="Histórico" />
+      ) : (
+        <Volver href="/semanas" texto="Semanas" />
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-semibold">Entrega del {formatearFecha(s.fecha_entrega)}</h1>
         <EstadoSemanaEtiqueta estado={s.estado} />

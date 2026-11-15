@@ -51,3 +51,22 @@ export function BotonAccion({
     </form>
   );
 }
+
+/** Cerrar la semana, con confirmación. */
+export function FormularioCerrar({ accion }: { accion: Accion }) {
+  const [estado, enviar, enviando] = useActionState(accion, {});
+  return (
+    <form action={enviar} className="flex flex-col gap-3">
+      <Casilla
+        nombre="confirmar"
+        texto="Quiero cerrar la semana. Quien siga sin responder quedará como «sin respuesta», y la semana pasará al histórico."
+      />
+      <ErrorGeneral estado={estado} />
+      <div>
+        <button type="submit" disabled={enviando} className={BOTON_SECUNDARIO}>
+          {enviando ? "Cerrando…" : "Cerrar la semana"}
+        </button>
+      </div>
+    </form>
+  );
+}

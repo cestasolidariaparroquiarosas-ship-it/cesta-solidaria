@@ -124,6 +124,8 @@ export type AsignacionReparto = {
   respondido_en: string | null;
   /** Asignación a la que sustituye, si viene de una reasignación (R4.4). */
   sustituye_a: string | null;
+  /** Casilla "entregado" (spec §10, pregunta 6). */
+  entregado: boolean;
 };
 
 export async function obtenerReparto(cliente: SupabaseClient, semanaId: string): Promise<Resultado<AsignacionReparto[]>> {
@@ -131,7 +133,7 @@ export async function obtenerReparto(cliente: SupabaseClient, semanaId: string):
   const { data, error } = await cliente
     .from("asignaciones")
     .select(
-      "id, estado, creado_en, plazo, enviado_en, respondido_en, sustituye_a, colaboradores(id, nombre, estado, pausado_hasta), asignacion_items(cantidad, cesta_items(alimento_id, unidad, precio_unitario, alimentos(nombre)))",
+      "id, estado, creado_en, plazo, enviado_en, respondido_en, sustituye_a, entregado, colaboradores(id, nombre, estado, pausado_hasta), asignacion_items(cantidad, cesta_items(alimento_id, unidad, precio_unitario, alimentos(nombre)))",
     )
     .eq("semana_id", semanaId)
     .order("creado_en")
@@ -153,6 +155,7 @@ export async function obtenerReparto(cliente: SupabaseClient, semanaId: string):
       enviado_en: a.enviado_en,
       respondido_en: a.respondido_en,
       sustituye_a: a.sustituye_a,
+      entregado: a.entregado,
       colaborador: a.colaboradores,
       items: a.asignacion_items.map((i) => ({
         alimento_id: i.cesta_items.alimento_id,

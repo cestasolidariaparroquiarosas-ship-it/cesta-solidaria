@@ -7,6 +7,7 @@ import { conCorreo } from "@/lib/correo/transporte";
 import { urlApp } from "@/lib/env";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { enviarPendientes, enviarSemana, type ErrorEnvioSemana } from "@/lib/servicios/envio";
+import { cerrarSemana, marcarEntregado } from "@/lib/servicios/historico";
 import { buscarSustituto } from "@/lib/servicios/respuestas";
 
 export type EstadoEnvio = { error?: string };
@@ -66,4 +67,37 @@ export async function buscarSustitutoAccion(semanaId: string, asignacionId: stri
     };
   }
   terminar(semanaId, "sustituto");
+}
+
+/** Cierra la semana: pasa al histórico (spec §5.7). Pide confirmación. */
+export async function cerrarSemanaAccion(semanaId: string, _estado: EstadoEnvio, formData: FormData): Promise<EstadoEnvio> {
+  await requerirAdmin();
+  if (formData.get("confirmar") !== "si") return { error: "Marca la casilla para confirmar." };
+  const resultado = await cerrarSemana(await crearClienteServidor(), semanaId);
+  if (!resultado.ok) {
+    const mensajes = {
+      no_enviada: "La semana ya está cerrada, o todavía no se ha enviado. Recarga la página.",
+      entrega_futura: "La entrega todavía no ha llegado.",
+      no_encontrado: MENSAJES.no_encontrado,
+      sin_permiso: MENSAJES.sin_permiso,
+      desconocido: MENSAJES.desconocido,
+    };
+    return { error: mensajes[resultado.error] };
+  }
+  revalidatePath("/historico");
+  revalidatePath("/");
+  terminar(semanaId, "cerrada");
+}
+
+/** Casilla "entregado" de una asignación confirmada (spec §10, pregunta 6). */
+export async function marcarEntregadoAccion(semanaId: string, asignacionId: string, entregado: boolean): Promise<EstadoEnvio> {
+  await requerirAdmin();
+  const resultado = await marcarEntregado(await crearClienteServidor(), semanaId, asignacionId, entregado);
+  if (!resultado.ok) {
+    const error = resultado.error;
+    return { error: error === "sin_permiso" || error === "desconocido" ? MENSAJES[error] : MENSAJES.no_encontrado };
+  }
+  revalidatePath("/historico");
+  revalidatePath("/");
+  terminar(semanaId, entregado ? "entregado" : "no_entregado");
 }
