@@ -31,14 +31,14 @@ Para cada CA del spec: dónde se comprueba. Las pruebas nombran el CA en su tít
 | CA-20 | El cron vence y reasigna solo las pendientes vencidas | I `cron` |
 | CA-21 | Sin candidatos: aviso al administrador | I `cron`, `envio` |
 | CA-22 | Baja desde el enlace | E `envio`; I `envio` |
-| CA-23 | Sin sesión de administrador no hay datos (RLS con anónimo) | U `rol`, `rutas`; E `acceso`; I en todos los archivos con tablas; O `scripts/comprobar-rls.sql` en CI y en cada despliegue |
+| CA-23 | Sin sesión de administrador no hay datos (RLS con anónimo) | U `rol`, `rutas`; E `acceso`; I `catalogo`, `colaboradores`, `envio`, `esquema`, `reparto`, `semanas` (lecturas y escrituras con un usuario anónimo y con uno autenticado sin rol). `cerrar_semana` y `conservar_doce_meses` (PR 8) no tienen una prueba propia con anónimo: los cubre la regla 7 de `scripts/comprobar-rls.sql` (anon no ejecuta ninguna función de `public`); O `scripts/comprobar-rls.sql` en CI, en cada despliegue y en cada copia restaurada |
 | CA-24 | Páginas públicas: nombre de pila, fecha y alimentos | U `respuestas`; E `envio`; I `envio` |
 | CA-25 | Registro público desactivado | U `config-supabase`, `rol`; E `acceso`; I `auth`; O paso "Registro público cerrado" de `deploy.yml` en pruebas y en producción |
 | CA-26 | El cron exige `CRON_SECRET` | U `cron`; E `acceso` (también `@humo` en los entornos desplegados); I `cron` |
 | CA-27 | El cron consulta la base de datos | I `cron` |
 | CA-28 | Móvil de 375 px sin desplazamiento horizontal | E en todos los archivos (proyecto `movil`) |
 | CA-29 | Histórico de una semana cerrada | E `historico`; I `historico` |
-| CA-30 | Un PR con pruebas fallidas no se fusiona | O `main` protegida: PR obligatorio y check `comprobaciones`, también para administradores. Varios PR tuvieron ejecuciones de CI fallidas (PR 5, 7 y 8) y solo se fusionaron tras pasar |
+| CA-30 | Un PR con pruebas fallidas no se fusiona | O `main` protegida: PR obligatorio y check `comprobaciones`, también para administradores. Comprobado por API el 2026-11-15 (`enforce_admins` activado). Varios PR tuvieron ejecuciones de CI fallidas y solo se fusionaron cuando pasaron |
 | CA-31 | Humo fallido en pruebas → producción intacta | O en `deploy.yml`, el job `produccion` (migraciones y despliegue) depende de `pruebas` y solo corre si este termina bien. Revisado en la revisión del PR 0. No se ha provocado un fallo real de humo a propósito |
 | CA-32 | Etiqueta, release y CHANGELOG por despliegue | O etiquetas y releases `v0.1.0` a `v0.9.0`; `scripts/comprobar-version.mjs` en CI |
 | CA-33 | Republicar una etiqueta anterior | O el 2026-11-15 se republicó `v0.9.0` a mano (deploy → Run workflow), primero en pruebas y después en producción |
@@ -51,4 +51,12 @@ El spec dice "restaurarla en el entorno de pruebas". La restauración se comprue
 - **Datos personales:** restaurar producción en pruebas dejaría nombres y correos reales en el proyecto al que llegan las vistas previas.
 - **Más comprobaciones:** se comprueba **cada día** y no una sola vez.
 
-Los pasos de restauración son los mismos que los de `docs/operacion.md`.
+Qué comprueba cada ejecución:
+- que la copia cifrada se descifra;
+- que se restaura sin errores en una sola transacción;
+- que `scripts/comprobar-rls.sql` pasa contra la base restaurada;
+- que cada tabla tiene las mismas filas que el volcado.
+
+Los pasos de restauración son los mismos que los de `docs/operacion.md`. La pila local de Supabase no es idéntica a la alojada (versiones de `auth`), así que un cambio de la plataforma puede hacer fallar la comprobación: `docs/operacion.md` explica qué hacer.
+
+Primera ejecución correcta: 2026-11-15. La anterior falló en una tabla interna de Storage, que la app no usa y desde entonces no se copia. El cambio respecto al spec está anotado en su §7.

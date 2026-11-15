@@ -72,10 +72,13 @@
 Viven en el repositorio **privado** `cesta-copias`, no en este: los artefactos de Actions de un repositorio público los puede descargar cualquiera, aunque vayan cifrados.
 
 - **Cuándo:** cada día a las 03:17 UTC (workflow `copia`). Se puede lanzar a mano: Actions → copia → "Run workflow".
-- **Qué guarda:** roles, esquema y datos de producción, cifrados con `BACKUP_PASSPHRASE` (AES-256), como artefacto `copia-AAAA-MM-DD` durante 30 días.
-- **Comprobación de cada copia (CA-34):** en la misma ejecución, la copia cifrada se descifra y se restaura, con los pasos de "Restaurar una copia de seguridad", en un Supabase vacío que se crea y se destruye allí mismo. Después se compara cuántas filas tiene cada tabla con las del volcado. Si algo no cuadra, la ejecución falla y GitHub avisa por correo. El resumen de cada ejecución muestra las tablas y sus filas, nunca datos.
+- **Qué guarda:** roles, esquema, los datos de `public` (la app) y `auth` (las cuentas de administrador) y la lista de migraciones aplicadas (`migraciones.txt`) de producción, cifrados con `BACKUP_PASSPHRASE` (AES-256), como artefacto `copia-AAAA-MM-DD` durante 30 días.
+- **Comprobación de cada copia (CA-34):** en la misma ejecución, la copia cifrada se descifra y se restaura, con los pasos de "Restaurar una copia de seguridad", en un Supabase vacío que se crea y se destruye allí mismo. Después se ejecuta `scripts/comprobar-rls.sql` contra la base restaurada y se compara cuántas filas tiene cada tabla con las del volcado. Si algo no cuadra, la ejecución falla y GitHub avisa por correo. El resumen de cada ejecución muestra las tablas y sus filas, nunca datos.
+- **Sin Storage:** la app no guarda archivos, y las tablas internas de Storage no se pueden restaurar con el usuario `postgres`, así que no se copian.
 - **Por qué no se restaura en `cesta-pruebas`:** habría que vaciarlo, y además quedarían datos personales reales en el proyecto de pruebas, al que llegan las vistas previas. El Supabase desechable es igual que uno nuevo y desaparece al terminar.
-- **Si falla:** mira el registro de la ejecución en `cesta-copias` → Actions. Lo más habitual es que haya cambiado la contraseña de la base de datos: actualiza `SUPABASE_PROD_DB_URL` en `cesta-copias` (y en este repositorio).
+- **Si falla:** mira el registro de la ejecución en `cesta-copias` → Actions. El registro solo muestra el código del error, nunca datos. Causas habituales:
+  - Ha cambiado la contraseña de la base de datos: actualiza `SUPABASE_PROD_DB_URL` en `cesta-copias` (y en este repositorio).
+  - Supabase ha cambiado sus tablas internas (`auth`), y el Supabase desechable va por detrás. Si el error es *column … does not exist* o *permission denied* en `auth`, sube la versión `SUPABASE_CLI` de `copia.yml`.
 
 ## Volver a una versión anterior
 
@@ -93,24 +96,34 @@ Viven en el repositorio **privado** `cesta-copias`, no en este: los artefactos d
    tar -xzf copia.tar.gz
    ```
 
-3. Restaurar **primero en pruebas, sobre una base vacía**. En Supabase → pruebas → Database → Settings → "Reset database", o usando un proyecto nuevo. Si la base ya tiene el esquema, aparecen errores de "already exists" y la restauración queda a medias.
+3. Probar **primero en un Supabase local desechable**, como hace cada noche el workflow `copia`. No se usa `cesta-pruebas`, para no dejar allí datos personales reales. En una carpeta vacía, con Docker:
 
    ```bash
-   psql --single-transaction --variable ON_ERROR_STOP=1 \
+   npx supabase init
+   npx supabase start
+   psql --single-transaction --variable ON_ERROR_STOP=1 --variable VERBOSITY=sqlstate \
         --file copia/roles.sql --file copia/esquema.sql \
         --command 'SET session_replication_role = replica' --file copia/datos.sql \
-        --dbname "$SUPABASE_STAGING_DB_URL"
+        --dbname "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
    ```
 
-   Con `ON_ERROR_STOP` y `--single-transaction`, o se restaura todo o no se cambia nada.
-4. Comprobar en la app de pruebas que los datos están bien. Solo entonces, y si hace falta, repetir en producción.
+   Con `ON_ERROR_STOP` y `--single-transaction`, o se restaura todo o no se cambia nada. Comprueba los datos (Studio en http://127.0.0.1:54323) y termina con `npx supabase stop --no-backup`, que lo borra todo.
+4. Restaurar en producción **sobre una base vacía**: en un proyecto nuevo, o tras "Reset database" en Supabase → Database → Settings. Si la base ya tiene el esquema, aparecen errores de "already exists" y la restauración no se aplica. Es el mismo comando `psql`, con `--dbname "$SUPABASE_PROD_DB_URL"`. Después:
+
+   ```bash
+   # Anotar las migraciones que ya estaban aplicadas, para que el despliegue no las repita
+   npx supabase migration repair --status applied $(cat copia/migraciones.txt) --remote="$SUPABASE_PROD_DB_URL"
+   psql "$SUPABASE_PROD_DB_URL" --variable ON_ERROR_STOP=1 --file scripts/comprobar-rls.sql
+   ```
+
+   Las migraciones posteriores a la copia, si las hay, se aplican con el siguiente despliegue. En un proyecto nuevo hay que repetir además los pasos 2, 4 y 5 de la puesta en marcha (registro cerrado, variables de Vercel y secretos de GitHub con las claves nuevas, también en `cesta-copias`). Las cuentas de administrador vienen en la copia.
 5. **Datos borrados después de la copia (RGPD):** si alguien pidió que se borraran sus datos después de la fecha de la copia, la restauración los vuelve a traer. Antes de usar la app con normalidad, vuelve a eliminarlo desde su ficha ("Eliminar definitivamente").
 
 ## Borrar los datos de un colaborador
 
 Si un colaborador pide que se borren sus datos, en Colaboradores → su ficha → "Eliminar definitivamente". Se borran su nombre y su correo de la base de datos; las semanas en que participó se conservan a nombre de "Colaborador eliminado".
 
-- Si tiene alimentos asignados en una semana que aún no ha terminado (propuesta o pendiente de respuesta), la app no deja eliminarlo: primero hay que cambiarlo por otro colaborador en el reparto de esa semana.
+- Si tiene alimentos asignados en una semana que aún no ha terminado (propuesta, pendiente de respuesta, o confirmada sin entregar en una semana sin cerrar), la app no deja eliminarlo: primero hay que cambiarlo por otro colaborador en el reparto, o marcar lo entregado y cerrar la semana.
 - Las copias de seguridad se guardan 30 días. Los datos borrados desaparecen de ellas cuando caducan las copias anteriores al borrado.
 
 ## Correo

@@ -16,15 +16,19 @@ Cada semana preparas las cestas de las familias, la app propone qué colaborador
    - sus **etiquetas de exclusión**, si las tiene ("contiene cerdo", "contiene gluten"…).
 
    Las etiquetas se crean en Alimentos → Etiquetas de exclusión. Son siempre **alimentarias**: nunca se anota religión ni salud.
-2. **Listas base:** cuánto de cada alimento corresponde **por adulto** y **por niño**. La lista marcada como predeterminada es la que se usa al crear una cesta.
+2. **Listas base:** cuánto de cada alimento corresponde **por adulto** y **por niño**. La lista marcada como predeterminada sale ya elegida al crear una cesta, pero se puede elegir otra.
 3. **Colaboradores:** nombre, correo y, si hace falta, notas. Solo se da de alta a quien **ha dado su consentimiento** (hay que marcar la casilla). Las notas son solo para organizar: nada de salud ni religión.
 
 ## Cada semana
 
-En **Semanas → Nueva semana** se crea la semana con su **fecha de entrega** y el **precio base**, que es lo que se pide gastar a cada colaborador, más o menos. Dentro de la semana hay cuatro pasos:
+En **Semanas → Nueva semana** se crea la semana. Dentro de la semana hay cuatro pasos:
 
 ### 1. Datos
-La fecha de entrega y el precio base. Se pueden cambiar mientras no se hayan enviado los correos.
+- La **fecha de entrega**.
+- El **precio base**: lo que se pide gastar a cada colaborador, más o menos.
+- El **plazo para responder**: día y hora (por defecto, a las 20:00). Tiene que terminar antes del día de la entrega.
+
+Se pueden cambiar mientras no se hayan enviado los correos.
 
 ### 2. Cestas
 Una cesta por familia, con:
@@ -35,7 +39,7 @@ Una cesta por familia, con:
 La app propone los alimentos con la lista base y quita los que chocan con las exclusiones (y avisa de cuáles ha quitado). Después puedes cambiar cantidades, quitar o añadir alimentos. La app no deja añadir algo que choque con las exclusiones de esa cesta.
 
 ### 3. Reparto
-Pulsa **Proponer reparto**. La app:
+Pulsa **Preparar el reparto** y después **Proponer reparto**. La app:
 - calcula cuántos colaboradores hacen falta: el coste total dividido entre el precio base, redondeando hacia arriba;
 - elige primero a quienes **hace más tiempo que no participan** (o nunca lo han hecho). No elige a quien está en pausa ni a quien se ha dado de baja;
 - reparte los alimentos para que todos gasten lo más parecido posible.
@@ -43,39 +47,39 @@ Pulsa **Proponer reparto**. La app:
 Si hay menos colaboradores disponibles de los necesarios, reparte entre los que hay y avisa de que alguno gastará más del precio base. Puedes mover alimentos de una persona a otra o cambiar a un colaborador por otro. **Volver a proponer el reparto** deshace los cambios hechos a mano.
 
 ### 4. Envío y respuestas
-Pulsa **Enviar los correos**. La app propone un plazo para responder: 48 horas, o hasta la víspera de la entrega a las 23:59 si eso llega antes. Puedes cambiarlo antes de enviar.
+Pulsa **Enviar los correos**. **Después de enviar ya no se pueden cambiar las cestas ni el reparto**, así que repásalos antes.
 
-Cada colaborador recibe **un solo correo** con su lista, el plazo y dos enlaces:
-- **Responder:** abre una página donde pulsa **Confirmar** o **No puedo**. Solo abrir el enlace no cambia nada; hay que pulsar el botón.
-- **Darse de baja:** deja de recibir correos de la cesta.
+Cada colaborador recibe **un solo correo** con su lista, el gasto aproximado, el plazo y dos enlaces: **Puedo llevarlo** y **No puedo esta vez**. Cada enlace abre una página con un resumen y los botones **Sí, puedo llevarlo** y **No puedo esta vez**: solo abrir el enlace no cambia nada, hay que pulsar el botón. Al pie del correo está el enlace para **darse de baja**, que también pide confirmar en la página.
 
-En esta misma pantalla ves cómo va cada uno: pendiente, confirmada, no puede, sin respuesta… Cuando alguien entregue sus alimentos, marca **Marcar como entregado**.
+En esta misma pantalla ves cómo va cada uno: «Esperando respuesta», «Confirmada», «No puede» o «Sin respuesta». Desde el día de la entrega, junto a cada colaborador confirmado aparece **Marcar como entregado**.
 
 ## Lo que hace la app sola
 
-- **Si alguien pulsa "No puedo":** la app pasa sus alimentos al siguiente colaborador disponible y le envía el correo en ese momento.
+- **Si alguien pulsa "No puedo esta vez":** la app pasa sus alimentos al siguiente colaborador disponible y le envía el correo en ese momento. El sustituto tiene 48 horas para responder, o hasta la víspera de la entrega a las 23:59 si eso llega antes.
 - **Cada mañana** (hacia las 8:00 en invierno y las 9:00 en verano, hora de España):
   - quien no ha respondido dentro del plazo queda como "sin respuesta", y sus alimentos pasan a otra persona;
   - vuelve a intentar los correos que no salieron;
   - cierra las semanas cuya entrega fue hace 7 días o más;
   - cuando han pasado 12 meses, cambia los identificadores de las cestas antiguas por "Cesta n.º X";
   - hace una consulta a la base de datos para que el servicio gratuito no la pause.
-- **Si no queda nadie para sustituir** a quien no puede, te llega un correo de aviso. Si consigues a alguien más (das de alta a un colaborador nuevo o reactivas a uno en pausa), pulsa **Buscar sustituto** en la pantalla de envío: la app le pasa los alimentos y le manda el correo.
+- **Si no queda nadie para sustituir** a quien no puede, o ya no hay tiempo antes de la entrega, te llega un correo de aviso. Si consigues a alguien más (das de alta a un colaborador nuevo o reactivas a uno en pausa), pulsa **Buscar sustituto** en la pantalla de envío: la app le pasa los alimentos y le manda el correo.
 - **Cada noche** se hace una copia de seguridad cifrada de todos los datos, y se comprueba que se puede restaurar (ver `docs/operacion.md`).
 
 ## Cerrar la semana
 
-Cuando la entrega ha pasado, pulsa **Cerrar la semana**. Quien siga sin responder queda como "sin respuesta" y la semana pasa al **Histórico**, donde se ve quién llevó qué. Si se te olvida, la app la cierra sola a los 7 días. Mientras tanto, en Inicio aparece en **Falta cerrar**.
+Cuando la entrega ha pasado, pulsa **Cerrar la semana**. Quien siga sin responder queda como "sin respuesta" y la semana pasa al **Histórico**, donde se ve quién llevó qué. Si se te olvida, la app la cierra sola a los 7 días. Mientras tanto, Inicio te recuerda que falta cerrarla.
 
 ## Inicio
 
-Resume la semana en curso (cuántos han confirmado y cuántos faltan) y dice qué toca hacer: añadir cestas, preparar el reparto, enviar, marcar lo entregado y cerrar. También avisa de los problemas: un correo que no ha salido, alguien que no puede y nadie lleva lo suyo, o semanas que faltan por cerrar. En la sección **Correo** puedes **enviar un correo de prueba** a tu dirección para comprobar que el envío funciona.
+Resume la semana en curso (cuántos han confirmado y cuántos faltan) y dice qué toca hacer: añadir cestas, preparar el reparto, enviar, marcar lo entregado y cerrar. También avisa de los problemas: un correo que no ha salido, alguien que no puede y nadie lleva lo suyo, o semanas que faltan por cerrar. En la sección **Correo** puedes **enviar un correo de prueba** para comprobar que el envío funciona. Llega a la dirección de avisos de la cesta (la misma que recibe los avisos de la app).
 
 ## Colaboradores: pausas, bajas y borrado
 
-- **En pausa:** para quien no puede durante un tiempo. Si pones fecha de vuelta, volverá a salir en las semanas con entrega posterior a esa fecha. Si la dejas vacía, sigue en pausa hasta que pulses **Reactivar**.
+- **En pausa:** para quien no puede durante un tiempo. Si pones fecha de vuelta, volverá a salir en las semanas con entrega posterior a esa fecha. Si la dejas vacía, sigue en pausa hasta que pulses **Reactivar ya**.
 - **Baja:** no vuelve a ser elegido ni recibe correos. Pasa al pulsar el enlace de baja del correo, o cuando tú lo marcas.
 - **Eliminar definitivamente:** borra su nombre y su correo de la base de datos, y no se puede deshacer. En el histórico aparece como "Colaborador eliminado". Úsalo si alguien pide que se borren sus datos.
+  - La app no deja eliminarlo si tiene alimentos en una semana que no ha terminado: en el reparto, esperando respuesta, o confirmados sin entregar en una semana sin cerrar. Primero cámbialo por otro en el reparto, o marca lo entregado y cierra la semana.
+  - Sus datos siguen en las copias de seguridad hasta 30 días, y luego desaparecen solos. Si restauras una copia, vuelve a eliminarlo.
 
 ## Protección de datos, en corto
 
