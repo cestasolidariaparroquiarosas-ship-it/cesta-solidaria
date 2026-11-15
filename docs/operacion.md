@@ -102,12 +102,16 @@ Viven en el repositorio **privado** `cesta-copias`, no en este: los artefactos d
    npx supabase init
    npx supabase start
    psql --single-transaction --variable ON_ERROR_STOP=1 --variable VERBOSITY=sqlstate \
-        --file copia/roles.sql --file copia/esquema.sql \
+        --file copia/roles.sql --file ruta/a/cesta-solidaria/scripts/preparar-restauracion.sql \
+        --file copia/esquema.sql \
         --command 'SET session_replication_role = replica' --file copia/datos.sql \
         --dbname "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
    ```
 
-   Con `ON_ERROR_STOP` y `--single-transaction`, o se restaura todo o no se cambia nada. Comprueba los datos (Studio en http://127.0.0.1:54323) y termina con `npx supabase stop --no-backup`, que lo borra todo.
+   - `preparar-restauracion.sql` es imprescindible: sin él, Supabase da permisos por defecto a `anon` y `authenticated` sobre todo lo restaurado.
+   - Con `ON_ERROR_STOP` y `--single-transaction`, o se restaura todo o no se cambia nada.
+
+   Comprueba los datos (Studio en http://127.0.0.1:54323) y termina con `npx supabase stop --no-backup`, que lo borra todo.
 4. Restaurar en producción **sobre una base vacía**: en un proyecto nuevo, o tras "Reset database" en Supabase → Database → Settings. Si la base ya tiene el esquema, aparecen errores de "already exists" y la restauración no se aplica. Es el mismo comando `psql`, con `--dbname "$SUPABASE_PROD_DB_URL"`. Después:
 
    ```bash

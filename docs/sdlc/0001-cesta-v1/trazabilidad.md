@@ -55,8 +55,11 @@ Qué comprueba cada ejecución:
 - que la copia cifrada se descifra;
 - que se restaura sin errores en una sola transacción;
 - que `scripts/comprobar-rls.sql` pasa contra la base restaurada;
+- que los permisos, la RLS y las políticas (`scripts/huella-permisos.sql`) son idénticos a los de producción;
 - que cada tabla tiene las mismas filas que el volcado.
 
 Los pasos de restauración son los mismos que los de `docs/operacion.md`. La pila local de Supabase no es idéntica a la alojada (versiones de `auth`), así que un cambio de la plataforma puede hacer fallar la comprobación: `docs/operacion.md` explica qué hacer.
 
-Primera ejecución correcta: 2026-11-15. La anterior falló en una tabla interna de Storage, que la app no usa y desde entonces no se copia. El cambio respecto al spec está anotado en su §7.
+Primera ejecución correcta: 2026-11-15. Las anteriores encontraron dos problemas del procedimiento de restauración, ya corregidos:
+- Una tabla interna de Storage no se podía restaurar. La app no usa Storage, y desde entonces no se copia.
+- Supabase daba permisos por defecto de más a `anon` y `authenticated` sobre lo restaurado. Ahora se quitan antes con `scripts/preparar-restauracion.sql`. El cambio respecto al spec está anotado en su §7.

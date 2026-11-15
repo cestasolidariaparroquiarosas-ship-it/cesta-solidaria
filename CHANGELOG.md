@@ -13,8 +13,11 @@ Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-ces
 - **Copias de seguridad (CA-34)** en el repositorio privado `cesta-copias` (workflow `copia`):
   - volcado diario de producción, cifrado con AES-256 y guardado 30 días;
   - en la misma ejecución, la copia cifrada se descifra y se restaura en un Supabase desechable, y se compara cuántas filas tiene cada tabla con las del volcado;
+  - después comprueba `scripts/comprobar-rls.sql` y que los permisos, la RLS y las políticas son idénticos a los de producción (`scripts/huella-permisos.sql`, nuevo);
   - no se restaura en `cesta-pruebas`, para no dejar allí datos personales reales (ver la nota de la trazabilidad).
-- CA-33 comprobado: se republicó `v0.9.0` a mano con el workflow de despliegue.
+- `scripts/preparar-restauracion.sql`: al restaurar una copia en un Supabase nuevo, quita antes sus privilegios por defecto. Sin esto, `anon` y `authenticated` recibían permisos de más sobre todas las tablas y funciones restauradas (lo detectó la primera comprobación).
+- La copia guarda `migraciones.txt`, y `docs/operacion.md` explica cómo anotarlas con `supabase migration repair` al restaurar en un proyecto nuevo.
+- CA-33: republicación a mano de una etiqueta anterior con el workflow de despliegue (ver la trazabilidad).
 
 ### Quitado
 - `.github/workflows/backup.yml`, que estaba desactivado: en un repositorio público, cualquiera puede descargar los artefactos de Actions. Lo sustituye el workflow `copia` de `cesta-copias`. La consulta diaria al proyecto de pruebas ya la hace `mantener-activo.yml`.
