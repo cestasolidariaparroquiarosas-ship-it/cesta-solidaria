@@ -288,10 +288,12 @@ describe("selección y reparto", () => {
     });
 
     it("una semana enviada no deja cambiar el reparto", async () => {
-      const { id } = await semanaConCesta(4, 1);
+      // 27,30 €: dos colaboradores, para tener origen y destino.
+      const { id } = await semanaConCesta(4, 3);
       expect((await proponer(id, await fechaDe(id))).r.ok).toBe(true);
       const reparto = await obtenerReparto(admin, id);
       const [a, b] = reparto.ok ? reparto.valor : [];
+      expect(b).toBeDefined();
       await servicio.from("semanas").update({ estado: "enviada" }).eq("id", id);
       expect(await proponerReparto(admin, id, [])).toEqual({ ok: false, error: "no_editable" });
       const movido = await moverEnReparto(admin, {
