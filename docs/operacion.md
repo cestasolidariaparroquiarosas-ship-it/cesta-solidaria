@@ -33,7 +33,6 @@
    - Secretos:
      - `VERCEL_TOKEN`, `VERCEL_ORG_ID` y `VERCEL_PROJECT_ID`. Los dos últimos están en `.vercel/project.json` tras `vercel link`, o en los ajustes del proyecto.
      - `SUPABASE_PROD_DB_URL` y `SUPABASE_STAGING_DB_URL`: Connect → "Session pooler", con la contraseña de la base de datos.
-     - `BACKUP_PASSPHRASE`: frase larga. **Guárdala también fuera de GitHub**; sin ella, las copias no se pueden abrir.
      - `VERCEL_AUTOMATION_BYPASS_SECRET` (ver paso 3).
    - Variable: `APP_URL` = URL de producción.
 6. **GitHub → Settings → Branches:** proteger `main` y exigir que pase el check `comprobaciones`.
@@ -49,7 +48,8 @@
 
    El rol vive en `app_metadata`, que el usuario no puede modificar. Para quitar el acceso, se borra la clave `rol` o el usuario.
 8. **Verificación en dos pasos** en la cuenta de Google de la cesta y en GitHub. Con la cuenta de Google se entra en GitHub, y con GitHub en Supabase y Vercel: es la llave de todo.
-9. **Avisos de fallos:** en GitHub → Settings → Notifications, activar los avisos de "Actions" por correo. Así te enterarás si falla un despliegue o la consulta diaria a Supabase.
+9. **Avisos de fallos:** en GitHub → Settings → Notifications, activar los avisos de "Actions" por correo. Así te enterarás si falla un despliegue, la consulta diaria a Supabase o la copia de seguridad.
+10. **Copias de seguridad:** repositorio **privado** `cesta-copias`, con sus propios secretos `SUPABASE_PROD_DB_URL` (la misma cadena que aquí) y `BACKUP_PASSPHRASE` (frase larga; **guárdala también fuera de GitHub**: sin ella, las copias no se pueden abrir). Ver "Copias de seguridad".
 
 ### Consejos de la puesta en marcha
 
@@ -57,19 +57,25 @@
 - Si el despliegue falla en "Migraciones" con `password authentication failed`, la contraseña de la cadena `SUPABASE_*_DB_URL` no es la buena: se cambia en Supabase → Database → Settings → "Reset password" y se actualiza el secreto.
 - Si al pulsar "Entrar" justo después de un despliegue no pasa nada, recarga la página: la pantalla era de la versión anterior.
 
-### Estado actual (2026-11-14)
+### Estado actual (2026-11-15)
 
 | Pieza | Valor |
 |---|---|
 | Supabase | `cesta-produccion` y `cesta-pruebas`, Central EU (Frankfurt), registro público desactivado |
 | Vercel | proyecto `cesta-solidaria`, equipo `cesta`, producción en https://cesta-solidaria-rosas.vercel.app |
 | GitHub | repositorio **público** (decisión del responsable, 2026-11-14): con GitHub gratuito, un repositorio privado no permite proteger `main` (CA-30). En el repositorio no hay datos ni claves. `main` protegida: PR obligatorio y check `comprobaciones`, también para administradores |
-| Copias | **ninguna por ahora**: desactivadas hasta trasladarlas a un repositorio privado (ver abajo) |
+| Copias | diarias, cifradas y comprobadas, en el repositorio **privado** `cesta-copias` (ver abajo) |
 | Supabase despierto | `mantener-activo.yml`: `select 1` diario en los dos proyectos |
 
 ## Copias de seguridad
 
-Pendiente: los artefactos de Actions de un repositorio público los puede descargar cualquiera, así que la copia diaria no puede vivir aquí aunque vaya cifrada. Plan: un repositorio **privado** `cesta-copias` con el mismo `backup.yml` y sus propios secretos (`SUPABASE_PROD_DB_URL`, `SUPABASE_STAGING_DB_URL`, `BACKUP_PASSPHRASE`). Mientras tanto **no hay copias**: el job de `backup.yml` está desactivado (`if: false`) y CA-34 queda pendiente. Los pasos de restauración de abajo valdrán igual cuando las copias vivan en `cesta-copias`.
+Viven en el repositorio **privado** `cesta-copias`, no en este: los artefactos de Actions de un repositorio público los puede descargar cualquiera, aunque vayan cifrados.
+
+- **Cuándo:** cada día a las 03:17 UTC (workflow `copia`). Se puede lanzar a mano: Actions → copia → "Run workflow".
+- **Qué guarda:** roles, esquema y datos de producción, cifrados con `BACKUP_PASSPHRASE` (AES-256), como artefacto `copia-AAAA-MM-DD` durante 30 días.
+- **Comprobación de cada copia (CA-34):** en la misma ejecución, la copia cifrada se descifra y se restaura, con los pasos de "Restaurar una copia de seguridad", en un Supabase vacío que se crea y se destruye allí mismo. Después se compara cuántas filas tiene cada tabla con las del volcado. Si algo no cuadra, la ejecución falla y GitHub avisa por correo. El resumen de cada ejecución muestra las tablas y sus filas, nunca datos.
+- **Por qué no se restaura en `cesta-pruebas`:** habría que vaciarlo, y además quedarían datos personales reales en el proyecto de pruebas, al que llegan las vistas previas. El Supabase desechable es igual que uno nuevo y desaparece al terminar.
+- **Si falla:** mira el registro de la ejecución en `cesta-copias` → Actions. Lo más habitual es que haya cambiado la contraseña de la base de datos: actualiza `SUPABASE_PROD_DB_URL` en `cesta-copias` (y en este repositorio).
 
 ## Volver a una versión anterior
 
@@ -79,7 +85,7 @@ Pendiente: los artefactos de Actions de un repositorio público los puede descar
 
 ## Restaurar una copia de seguridad
 
-1. Descargar el artefacto `copia-AAAA-MM-DD` desde GitHub → Actions → backup, en el repositorio privado de copias.
+1. Descargar el artefacto `copia-AAAA-MM-DD` desde `cesta-copias` → Actions → copia → la ejecución de ese día. GitHub lo descarga dentro de un `.zip`: descomprímelo y queda `copia-AAAA-MM-DD.tar.gz.gpg`.
 2. Descifrar y descomprimir:
 
    ```bash
@@ -105,7 +111,7 @@ Pendiente: los artefactos de Actions de un repositorio público los puede descar
 Si un colaborador pide que se borren sus datos, en Colaboradores → su ficha → "Eliminar definitivamente". Se borran su nombre y su correo de la base de datos; las semanas en que participó se conservan a nombre de "Colaborador eliminado".
 
 - Si tiene alimentos asignados en una semana que aún no ha terminado (propuesta o pendiente de respuesta), la app no deja eliminarlo: primero hay que cambiarlo por otro colaborador en el reparto de esa semana.
-- Las copias de seguridad, cuando estén activas, se guardan 30 días. Sus datos desaparecen de ellas cuando caducan las copias anteriores al borrado.
+- Las copias de seguridad se guardan 30 días. Los datos borrados desaparecen de ellas cuando caducan las copias anteriores al borrado.
 
 ## Correo
 
