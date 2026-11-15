@@ -44,7 +44,11 @@ export function FormularioAlimento({
           />
         )}
       </Campo>
-      <Campo etiqueta="Unidad" ayuda="Cómo se compra: paquete 1 kg, litro, lata 400 g..." error={errores.unidad}>
+      <Campo
+        etiqueta="Unidad"
+        ayuda="Cómo se compra: paquete 1 kg, litro, lata 400 g... Las cestas ya creadas conservan la unidad que tenían."
+        error={errores.unidad}
+      >
         {(props) => (
           <input
             {...props}

@@ -3,6 +3,38 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [0.5.0] - 2026-11-15
+
+Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 4.
+
+### Añadido
+- **Semanas** (spec §5.6): lista, alta, datos (paso 1: fecha de entrega, precio base y plazo) y eliminación mientras está en preparación. Los pasos 3 y 4 (reparto y envío) llegan en los PR 5 y 6.
+  - El plazo se escribe en hora de Madrid y se guarda en UTC; tiene que ser futuro y anterior al día de la entrega. Se prueban los cambios de hora de marzo (la hora que no existe se rechaza) y de octubre (en la hora repetida se toma la primera vez).
+  - El precio base se rellena con el de la semana anterior.
+- **Cestas** (paso 2) con la propuesta automática de R1 (`lib/dominio/cesta.ts`):
+  - Cantidad = adultos × por adulto + niños × por niño, redondeado hacia arriba, contando en centésimas para que 2 × 1,5 + 1 sean 4 y no 5 (CA-05).
+  - Se quitan los alimentos que chocan con las exclusiones y la cesta lo avisa, para añadir sustitutos (CA-06). También avisa de los desactivados en el catálogo, que no se proponen.
+  - Se pueden añadir alimentos a mano, cambiar cantidades y quitarlos. Si el alimento choca con las exclusiones no se guarda (CA-07).
+  - Cambiar los datos de la cesta conserva sus alimentos, salvo los que choquen con una exclusión nueva. Una casilla permite volver a proponerlos con la lista base.
+  - Del receptor solo se pide un identificador ("Familia 12").
+- La semana muestra cada cesta con sus unidades, su coste y el coste total.
+- Migración `20261115120000_semanas_cestas.sql`:
+  - `cesta_items.unidad`: la unidad se copia al añadir el alimento, igual que el precio (CA-08). Un disparador copia los dos del catálogo si no se indican.
+  - Las cestas, sus alimentos y sus exclusiones solo se cambian con la semana en preparación (`borrador`). El identificador del receptor sí se puede cambiar siempre (conservación a 12 meses, PR 8).
+  - `guardar_cesta`: guarda la cesta, sus exclusiones y sus alimentos de una vez.
+
+### Requisitos de la revisión del PR 3
+- **Choque posterior (CA-06):** si después de crear una cesta se marca en el catálogo que un alimento contiene algo que la cesta excluye, la cesta lo muestra en rojo y la semana dice "Revisar". Prueba de integración que añade la etiqueta después.
+- **Unidad cambiada:** se copia en `cesta_items`, así que las cestas ya creadas siguen pidiendo lo mismo.
+
+### Notas de diseño
+- Los avisos de "no entran por las exclusiones" se calculan al mostrar la cesta con la lista base actual; no se guardan.
+- "Volver a proponer" toma los precios actuales del catálogo: es una cesta nueva.
+- Sin lista base, la cesta empieza vacía y se llena a mano.
+
+### Pendiente para el PR 5
+- Cambiar una cesta después de proponer el reparto: los alimentos ya repartidos no se pueden quitar (clave ajena), y el mensaje actual es genérico. Decidir si cambiar una cesta descarta el reparto propuesto.
+
 ## [0.4.0] - 2026-11-15
 
 Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-cesta-v1/spec.md) · [plan](docs/sdlc/0001-cesta-v1/plan.md), PR 3.
