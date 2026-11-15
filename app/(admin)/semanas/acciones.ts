@@ -147,7 +147,8 @@ export async function crearCestaAccion(semanaId: string, _estado: EstadoSemanas,
   const resultado = await guardarCesta(cliente, { id: null, semanaId, datos: validacion.datos, items: propuesta.items });
   if (!resultado.ok) return errorCesta(resultado.error, valores);
   refrescarSemana(semanaId);
-  redirect(`/semanas/${semanaId}/cestas/${resultado.valor.id}?aviso=creada`);
+  const aviso = validacion.datos.lista_base_id ? "creada" : "creada_vacia";
+  redirect(`/semanas/${semanaId}/cestas/${resultado.valor.id}?aviso=${aviso}`);
 }
 
 /**
@@ -177,8 +178,12 @@ export async function editarCestaAccion(
   const resultado = await guardarCesta(cliente, { id: cestaId, semanaId, datos: validacion.datos, items });
   if (!resultado.ok) return errorCesta(resultado.error, valores);
   refrescarSemana(semanaId, `/semanas/${semanaId}/cestas/${cestaId}`);
-  const aviso = items !== null ? "recalculada" : resultado.valor.quitados > 0 ? "quitados" : "guardada";
-  redirect(`/semanas/${semanaId}/cestas/${cestaId}?aviso=${aviso}`);
+  const { quitados } = resultado.valor;
+  if (items === null && quitados.length > 0) {
+    // Solo ids: la página los traduce a nombres del catálogo (nunca pinta texto de la URL).
+    redirect(`/semanas/${semanaId}/cestas/${cestaId}?aviso=quitados&quitados=${quitados.join(",")}`);
+  }
+  redirect(`/semanas/${semanaId}/cestas/${cestaId}?aviso=${items !== null ? "recalculada" : "guardada"}`);
 }
 
 export async function eliminarCestaAccion(
@@ -189,7 +194,7 @@ export async function eliminarCestaAccion(
 ): Promise<EstadoSemanas> {
   await requerirAdmin();
   if (formData.get("confirmar") !== "si") return { error: "Marca la casilla para confirmar." };
-  const resultado = await eliminarCesta(await crearClienteServidor(), cestaId);
+  const resultado = await eliminarCesta(await crearClienteServidor(), semanaId, cestaId);
   if (!resultado.ok) return { error: GENERICOS[resultado.error] };
   refrescarSemana(semanaId);
   redirect(`/semanas/${semanaId}?aviso=cesta_eliminada`);
@@ -217,6 +222,7 @@ export async function anadirACestaAccion(
     listarEtiquetas(cliente),
   ]);
   if (!cesta.ok) return { error: GENERICOS[cesta.error], valores };
+  if (cesta.valor.semana.id !== semanaId) return { error: GENERICOS.no_encontrado, valores };
   if (!alimento.ok) return { errores: { alimento_id: "Ese alimento ya no existe. Recarga la página." }, valores };
 
   const conflicto = etiquetasEnConflicto(alimento.valor.etiquetas, cesta.valor.exclusiones);
@@ -252,7 +258,7 @@ export async function cambiarCantidadAccion(
   const cantidad = validarCantidadItem(valores.cantidad);
   if (!cantidad.ok) return { errores: { cantidad: cantidad.error }, valores };
 
-  const resultado = await cambiarCantidadCesta(await crearClienteServidor(), itemId, cantidad.cantidad);
+  const resultado = await cambiarCantidadCesta(await crearClienteServidor(), cestaId, itemId, cantidad.cantidad);
   if (!resultado.ok) return { error: GENERICOS[resultado.error], valores };
   refrescarSemana(semanaId, `/semanas/${semanaId}/cestas/${cestaId}`);
   redirect(`/semanas/${semanaId}/cestas/${cestaId}?aviso=cantidad`);
@@ -260,7 +266,7 @@ export async function cambiarCantidadAccion(
 
 export async function quitarDeCestaAccion(semanaId: string, cestaId: string, itemId: string): Promise<EstadoSemanas> {
   await requerirAdmin();
-  const resultado = await quitarDeCesta(await crearClienteServidor(), itemId);
+  const resultado = await quitarDeCesta(await crearClienteServidor(), cestaId, itemId);
   if (!resultado.ok) return { error: GENERICOS[resultado.error] };
   refrescarSemana(semanaId, `/semanas/${semanaId}/cestas/${cestaId}`);
   redirect(`/semanas/${semanaId}/cestas/${cestaId}?aviso=quitado`);

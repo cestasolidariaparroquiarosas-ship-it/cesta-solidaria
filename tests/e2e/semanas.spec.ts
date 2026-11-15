@@ -8,7 +8,7 @@ import { alerta, entrarComoAdmin } from "./utilidades";
 test.skip(Boolean(process.env.BASE_URL), "Solo contra Supabase local");
 
 config({ path: ".env.local", quiet: true });
-const MARCA = `e2e${Date.now()}`;
+const MARCA = `e2e-semanas-${Date.now()}`;
 const fechas: string[] = [];
 
 /** Una fecha de entrega futura que no choque con otras pruebas. */
@@ -20,21 +20,34 @@ function fechaLibre() {
 
 test.beforeAll(async () => {
   const s = clienteServicio();
-  const { data: cerdo } = await s.from("etiquetas_exclusion").select("id").eq("codigo", "cerdo").single();
-  const { data: alimentos } = await s
-    .from("alimentos")
-    .insert([
-      { nombre: `${MARCA} Arroz`, unidad: "paquete 1 kg", precio_aprox: 1.2 },
-      { nombre: `${MARCA} Chorizo`, unidad: "pieza 200 g", precio_aprox: 2.5 },
-    ])
-    .select("id, nombre");
-  const id = (nombre: string) => alimentos!.find((a) => a.nombre === `${MARCA} ${nombre}`)!.id;
-  await s.from("alimento_etiquetas").insert({ alimento_id: id("Chorizo"), etiqueta_id: cerdo!.id });
-  const { data: lista } = await s.from("listas_base").insert({ nombre: `${MARCA} Familia` }).select("id").single();
-  await s.from("lista_base_items").insert([
-    { lista_base_id: lista!.id, alimento_id: id("Arroz"), cantidad_por_adulto: 1.5, cantidad_por_nino: 1 },
-    { lista_base_id: lista!.id, alimento_id: id("Chorizo"), cantidad_por_adulto: 0.5, cantidad_por_nino: 0 },
-  ]);
+  const comprobar = <T>({ data, error }: { data: T; error: { message: string } | null }): NonNullable<T> => {
+    if (error || data === null || data === undefined) {
+      throw new Error(`No se han podido preparar los datos: ${error?.message}`);
+    }
+    return data;
+  };
+  const cerdo = comprobar(await s.from("etiquetas_exclusion").select("id").eq("codigo", "cerdo").single());
+  const alimentos = comprobar(
+    await s
+      .from("alimentos")
+      .insert([
+        { nombre: `${MARCA} Arroz`, unidad: "paquete 1 kg", precio_aprox: 1.2 },
+        { nombre: `${MARCA} Chorizo`, unidad: "pieza 200 g", precio_aprox: 2.5 },
+      ])
+      .select("id, nombre"),
+  );
+  const id = (nombre: string) => alimentos.find((a) => a.nombre === `${MARCA} ${nombre}`)!.id;
+  comprobar(await s.from("alimento_etiquetas").insert({ alimento_id: id("Chorizo"), etiqueta_id: cerdo.id }).select());
+  const lista = comprobar(await s.from("listas_base").insert({ nombre: `${MARCA} Familia` }).select("id").single());
+  comprobar(
+    await s
+      .from("lista_base_items")
+      .insert([
+        { lista_base_id: lista.id, alimento_id: id("Arroz"), cantidad_por_adulto: 1.5, cantidad_por_nino: 1 },
+        { lista_base_id: lista.id, alimento_id: id("Chorizo"), cantidad_por_adulto: 0.5, cantidad_por_nino: 0 },
+      ])
+      .select(),
+  );
 });
 
 test.afterAll(async () => {
@@ -162,6 +175,10 @@ test.describe("semanas en el móvil", () => {
     await page.getByLabel("Lista base").selectOption({ label: `${MARCA} Familia` });
     await page.getByRole("button", { name: "Crear cesta" }).click();
     await expect(page.getByRole("status")).toBeVisible();
+    await sinDesbordar(page);
+    // La semana con una cesta, que es la pantalla más ancha.
+    await page.getByRole("link", { name: /Entrega del/ }).click();
+    await expect(page.getByRole("link", { name: new RegExp(`${MARCA} Familia con nombre largo`) })).toBeVisible();
     await sinDesbordar(page);
   });
 });

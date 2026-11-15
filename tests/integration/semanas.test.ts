@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { anadirALista, crearLista, guardarAlimento, obtenerAlimento } from "@/lib/servicios/catalogo";
+import { anadirALista, crearLista, eliminarLista, guardarAlimento, obtenerAlimento } from "@/lib/servicios/catalogo";
 import { choquesEnCesta, proponerCesta, type DatosCesta } from "@/lib/dominio/cesta";
 import {
   anadirACesta,
@@ -142,9 +142,9 @@ describe("servicio de semanas y cestas", () => {
       expect(await guardarSemana(admin, id, datos)).toEqual({ ok: false, error: "no_editable" });
       expect(await eliminarSemana(admin, id)).toEqual({ ok: false, error: "no_editable" });
       expect(await anadirACesta(admin, cestaId, lentejas, 1)).toEqual({ ok: false, error: "no_editable" });
-      expect(await cambiarCantidadCesta(admin, item!.id, 9)).toEqual({ ok: false, error: "no_editable" });
-      expect(await quitarDeCesta(admin, item!.id)).toEqual({ ok: false, error: "no_editable" });
-      expect(await eliminarCesta(admin, cestaId)).toEqual({ ok: false, error: "no_editable" });
+      expect(await cambiarCantidadCesta(admin, cestaId, item!.id, 9)).toEqual({ ok: false, error: "no_editable" });
+      expect(await quitarDeCesta(admin, cestaId, item!.id)).toEqual({ ok: false, error: "no_editable" });
+      expect(await eliminarCesta(admin, id, cestaId)).toEqual({ ok: false, error: "no_editable" });
       const otra = await guardarCesta(admin, {
         id: null,
         semanaId: id,
@@ -152,6 +152,43 @@ describe("servicio de semanas y cestas", () => {
         items: [],
       });
       expect(otra).toEqual({ ok: false, error: "no_editable" });
+      expect((await itemDe(cestaId, arroz))?.cantidad).toBe(4);
+    });
+
+    it("se puede eliminar una lista base usada en una semana ya enviada; la cesta conserva sus alimentos", async () => {
+      const id = await semana();
+      const otra = await crearLista(admin, `${MARCA} lista efímera`);
+      if (!otra.ok) throw new Error(otra.error);
+      await anadirALista(admin, otra.valor.id, arroz, { cantidad_por_adulto: 1, cantidad_por_nino: 0 });
+      const r = await guardarCesta(admin, {
+        id: null,
+        semanaId: id,
+        datos: { identificador_receptor: "Lista", adultos: 2, ninos: 0, lista_base_id: otra.valor.id, exclusiones: [] },
+        items: [{ alimento_id: arroz, cantidad: 2 }],
+      });
+      if (!r.ok) throw new Error(r.error);
+      await servicio.from("semanas").update({ estado: "enviada" }).eq("id", id);
+
+      expect(await eliminarLista(admin, otra.valor.id)).toEqual({ ok: true, valor: undefined });
+      const c = await obtenerCesta(admin, r.valor.id);
+      expect(c.ok && c.valor).toMatchObject({ lista_base_id: null, items: [expect.objectContaining({ cantidad: 2 })] });
+    });
+
+    it("las acciones sobre una cesta comprueban que es de esa semana", async () => {
+      const id = await semana();
+      const otraSemana = await semana();
+      const { id: cestaId } = await cestaPropuesta(id);
+      const item = await itemDe(cestaId, arroz);
+      const datos: DatosCesta = { identificador_receptor: "Otra", adultos: 1, ninos: 0, lista_base_id: null, exclusiones: [] };
+
+      expect(await guardarCesta(admin, { id: cestaId, semanaId: otraSemana, datos, items: null })).toEqual({
+        ok: false,
+        error: "no_encontrado",
+      });
+      expect(await eliminarCesta(admin, otraSemana, cestaId)).toEqual({ ok: false, error: "no_encontrado" });
+      const otraCesta = await cestaPropuesta(otraSemana);
+      expect(await quitarDeCesta(admin, otraCesta.id, item!.id)).toEqual({ ok: false, error: "no_encontrado" });
+      expect(await cambiarCantidadCesta(admin, otraCesta.id, item!.id, 9)).toEqual({ ok: false, error: "no_encontrado" });
       expect((await itemDe(cestaId, arroz))?.cantidad).toBe(4);
     });
 
@@ -212,7 +249,7 @@ describe("servicio de semanas y cestas", () => {
 
       // Y se puede quitar.
       const item = c.ok ? c.valor.items.find((i) => i.alimento_id === salchicha) : undefined;
-      expect(await quitarDeCesta(admin, item!.id)).toEqual({ ok: true, valor: undefined });
+      expect(await quitarDeCesta(admin, cestaId, item!.id)).toEqual({ ok: true, valor: undefined });
     });
 
     it("CA-07: no deja añadir a mano un alimento que choca con las exclusiones", async () => {
@@ -225,6 +262,15 @@ describe("servicio de semanas y cestas", () => {
       expect(await anadirACesta(admin, cestaId, lentejas, 3)).toEqual({ ok: true, valor: undefined });
       expect(await itemDe(cestaId, lentejas)).toMatchObject({ cantidad: 3, precio_unitario: 1.8 });
       expect(await anadirACesta(admin, cestaId, lentejas, 1)).toEqual({ ok: false, error: "duplicado" });
+    });
+
+    it("añadir un alimento que ya no existe da \"en_uso\", no un error desconocido", async () => {
+      const id = await semana();
+      const { id: cestaId } = await cestaPropuesta(id);
+      expect(await anadirACesta(admin, cestaId, "00000000-0000-4000-8000-000000000000", 1)).toEqual({
+        ok: false,
+        error: "en_uso",
+      });
     });
 
     it("CA-07: un alta cuyo alimento choca no guarda nada (catálogo cambiado a medias)", async () => {
@@ -258,7 +304,7 @@ describe("servicio de semanas y cestas", () => {
       expect(await itemDe(cestaId, aceite)).toMatchObject({ precio_unitario: 7.5, unidad: "paquete 1 kg" });
       // Cambiar la cantidad tampoco cambia el precio.
       const item = await itemDe(cestaId, aceite);
-      await cambiarCantidadCesta(admin, item!.id, 2);
+      await cambiarCantidadCesta(admin, cestaId, item!.id, 2);
       expect(await itemDe(cestaId, aceite)).toMatchObject({ cantidad: 2, precio_unitario: 7.5 });
     });
 
@@ -275,7 +321,7 @@ describe("servicio de semanas y cestas", () => {
         exclusiones: [cerdo],
       };
       const r = await guardarCesta(admin, { id: cestaId, semanaId: id, datos, items: null });
-      expect(r).toEqual({ ok: true, valor: { id: cestaId, quitados: 1 } });
+      expect(r).toEqual({ ok: true, valor: { id: cestaId, quitados: [chorizo] } });
       let c = await obtenerCesta(admin, cestaId);
       expect(c.ok && c.valor).toMatchObject({ identificador_receptor: "Familia 1 bis", exclusiones: [cerdo] });
       expect(c.ok && c.valor.items.map((i) => i.alimento_id).sort()).toEqual([arroz, lentejas].sort());

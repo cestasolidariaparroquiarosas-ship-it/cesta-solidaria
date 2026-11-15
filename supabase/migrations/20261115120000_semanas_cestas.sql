@@ -37,6 +37,11 @@ begin
     into new.precio_unitario, new.unidad
     from public.alimentos a
     where a.id = new.alimento_id;
+
+    -- Mismo error que daría la clave ajena, en vez de "precio vacío".
+    if not found then
+      raise exception 'El alimento no existe' using errcode = 'foreign_key_violation';
+    end if;
   end if;
   return new;
 end;
@@ -50,20 +55,29 @@ create trigger cesta_items_completar
 -- 2. Las cestas solo se cambian mientras la semana está en preparación (borrador).
 --    Una vez enviada, cambiar una cesta dejaría alimentos sin colaborador o pediría
 --    cosas distintas de las del correo. La app ya lo comprueba; esto cubre que dos
---    pestañas abiertas hagan cosas a la vez.
---    El identificador del receptor sí se puede cambiar siempre: a los 12 meses de
---    cerrar una semana se sustituye por "Cesta n.º X" (spec §10, PR 8).
+--    pestañas abiertas hagan cosas a la vez: la comprobación bloquea la fila de la
+--    semana (FOR SHARE) hasta el final de la transacción, así que "Enviar" (PR 6), que
+--    debe cambiar el estado con SELECT ... FOR UPDATE, espera a que termine el cambio
+--    de la cesta, y un cambio que llegue después ya ve la semana enviada.
+--    Sí se pueden cambiar siempre:
+--    - El identificador del receptor: a los 12 meses de cerrar una semana se sustituye
+--      por "Cesta n.º X" (spec §10, PR 8).
+--    - La lista base de referencia: al borrar una lista, la clave ajena la pone a NULL
+--      en todas las cestas que la usaron. Los alimentos ya están copiados en la cesta.
 --    Borrar la semana entera funciona: en la cascada la semana ya no existe.
 -- ---------------------------------------------------------------------------
 
 create function privado.exigir_semana_en_preparacion(p_semana_id uuid)
 returns void
 language plpgsql
-stable
 set search_path = ''
 as $$
+declare
+  v_estado text;
 begin
-  if exists (select 1 from public.semanas s where s.id = p_semana_id and s.estado <> 'borrador') then
+  select s.estado into v_estado from public.semanas s where s.id = p_semana_id for share;
+  -- Sin semana (se está borrando en cascada), no hay nada que proteger.
+  if v_estado is not null and v_estado <> 'borrador' then
     raise exception 'La semana ya no está en preparación'
       using errcode = 'object_not_in_prerequisite_state', hint = 'semana_no_editable';
   end if;
@@ -93,7 +107,7 @@ end;
 $$;
 
 create trigger cestas_solo_en_preparacion
-  before insert or delete or update of semana_id, adultos, ninos, lista_base_id on public.cestas
+  before insert or delete or update of semana_id, adultos, ninos on public.cestas
   for each row execute function privado.cestas_solo_en_preparacion();
 
 -- Para cesta_items y cesta_exclusiones: la semana se busca a través de la cesta.
@@ -131,13 +145,14 @@ create trigger cesta_exclusiones_solo_en_preparacion
 --    Si fallara a medias, podría quedar una cesta "sin cerdo" sin la exclusión
 --    guardada, y el chorizo podría acabar dentro.
 --
---    p_id nulo: alta en la semana p_semana_id. Con valor: edición (p_semana_id se ignora).
+--    p_id nulo: alta en la semana p_semana_id. Con valor: edición.
 --    p_items: [{"alimento_id": "...", "cantidad": 4}, ...]
 --      - con valor: sustituye todos los alimentos (la propuesta de R1 calculada en
 --        lib/dominio/cesta.ts). Precio y unidad se copian del catálogo ahora (CA-08).
 --      - nulo: conserva los alimentos, salvo los que choquen con las exclusiones
 --        nuevas, que se quitan (R1.2).
---    Devuelve {"id": "...", "quitados": n}: n alimentos quitados por las exclusiones.
+--    Devuelve {"id": "...", "quitados": [ids]}: los alimentos quitados por las exclusiones.
+--    En la edición, la cesta tiene que ser de la semana p_semana_id.
 -- ---------------------------------------------------------------------------
 
 create function public.guardar_cesta(
@@ -158,7 +173,7 @@ as $$
 declare
   v_id uuid;
   v_exclusiones uuid[] := coalesce(p_exclusiones, '{}');
-  v_quitados integer := 0;
+  v_quitados uuid[] := '{}';
 begin
   if p_id is null then
     insert into public.cestas (semana_id, identificador_receptor, adultos, ninos, lista_base_id)
@@ -170,7 +185,7 @@ begin
         adultos = p_adultos,
         ninos = p_ninos,
         lista_base_id = p_lista_base_id
-    where id = p_id
+    where id = p_id and semana_id = p_semana_id
     returning id into v_id;
 
     if v_id is null then
@@ -182,12 +197,16 @@ begin
     delete from public.cesta_items where cesta_id = v_id;
   else
     -- R1.2: fuera lo que choca con las exclusiones nuevas.
-    delete from public.cesta_items ci
-    using public.alimento_etiquetas ae
-    where ci.cesta_id = v_id
-      and ae.alimento_id = ci.alimento_id
-      and ae.etiqueta_id = any (v_exclusiones);
-    get diagnostics v_quitados = row_count;
+    with borrados as (
+      delete from public.cesta_items ci
+      where ci.cesta_id = v_id
+        and exists (
+          select 1 from public.alimento_etiquetas ae
+          where ae.alimento_id = ci.alimento_id and ae.etiqueta_id = any (v_exclusiones)
+        )
+      returning ci.alimento_id
+    )
+    select coalesce(array_agg(alimento_id), '{}') into v_quitados from borrados;
   end if;
 
   delete from public.cesta_exclusiones
@@ -207,7 +226,7 @@ begin
     from jsonb_array_elements(p_items) as i;
   end if;
 
-  return jsonb_build_object('id', v_id, 'quitados', v_quitados);
+  return jsonb_build_object('id', v_id, 'quitados', to_jsonb(v_quitados));
 end;
 $$;
 

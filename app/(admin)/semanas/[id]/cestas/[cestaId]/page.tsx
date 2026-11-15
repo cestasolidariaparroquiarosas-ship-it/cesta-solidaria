@@ -22,6 +22,7 @@ export const metadata: Metadata = { title: "Cesta · Cesta solidaria" };
 
 const AVISOS = {
   creada: "Cesta creada con la propuesta de la lista base. Revisa los alimentos y cámbialos si hace falta.",
+  creada_vacia: "Cesta creada sin lista base. Añade sus alimentos.",
   guardada: "Datos de la cesta guardados.",
   quitados: "Datos guardados. Se han quitado los alimentos que chocaban con las exclusiones nuevas.",
   recalculada: "Datos guardados y alimentos propuestos de nuevo con la lista base.",
@@ -33,14 +34,14 @@ const AVISOS = {
 export default async function PaginaCesta({ params, searchParams }: PageProps<"/semanas/[id]/cestas/[cestaId]">) {
   await requerirAdmin();
   const { id, cestaId } = await params;
-  const { aviso } = await searchParams;
+  const { aviso, quitados: quitadosParam } = await searchParams;
 
   const cliente = await crearClienteServidor();
   const [cesta, etiquetas, listas, alimentos] = await Promise.all([
     obtenerCesta(cliente, cestaId),
     listarEtiquetas(cliente),
     listarListas(cliente),
-    listarAlimentos(cliente),
+    listarAlimentos(cliente, { incluirInactivos: true }),
   ]);
   if (!cesta.ok) {
     if (cesta.error === "no_encontrado") notFound();
@@ -71,8 +72,15 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
 
   const sin = textoSin(nombres(c.exclusiones));
   const lista = listas.valor.find((l) => l.id === c.lista_base_id);
+  // Tras añadir una exclusión: qué alimentos se han quitado (también los añadidos a
+  // mano, que el aviso de la lista base no cubre). De la URL solo se toman ids del catálogo.
+  const idsQuitados = new Set(
+    aviso === "quitados" && typeof quitadosParam === "string" ? quitadosParam.split(",") : [],
+  );
+  const quitadosAhora = alimentos.valor.filter((a) => idsQuitados.has(a.id));
+
   const disponibles = alimentos.valor
-    .filter((a) => !enCesta.has(a.id))
+    .filter((a) => a.activo && !enCesta.has(a.id))
     .map((a) => ({ id: a.id, nombre: a.nombre, unidad: a.unidad, contiene: textoContiene(nombres(a.etiquetas)) }));
 
   return (
@@ -87,6 +95,11 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
         </p>
       </div>
       <Aviso clave={aviso} textos={AVISOS} />
+      {quitadosAhora.length > 0 && (
+        <p className="text-sm text-emerald-900">
+          Quitados: {quitadosAhora.map((a) => `${a.nombre} (${a.unidad})`).join(", ")}.
+        </p>
+      )}
 
       {choques.size > 0 && (
         <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">

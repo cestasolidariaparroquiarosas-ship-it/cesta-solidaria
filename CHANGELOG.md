@@ -27,13 +27,20 @@ Origen: [intent](docs/sdlc/0001-cesta-v1/intent.md) · [spec](docs/sdlc/0001-ces
 - **Choque posterior (CA-06):** si después de crear una cesta se marca en el catálogo que un alimento contiene algo que la cesta excluye, la cesta lo muestra en rojo y la semana dice "Revisar". Prueba de integración que añade la etiqueta después.
 - **Unidad cambiada:** se copia en `cesta_items`, así que las cestas ya creadas siguen pidiendo lo mismo.
 
+### Revisión independiente
+- [Informe](docs/sdlc/0001-cesta-v1/revision-pr4.md): 1 hallazgo medio y 7 menores, todos corregidos. El principal: borrar una lista base usada en una semana ya enviada fallaba por el disparador nuevo.
+
 ### Notas de diseño
+- Al borrar una lista base, las cestas que la usaron se quedan sin lista y conservan sus alimentos, también en semanas enviadas.
+- La comprobación de "semana en preparación" bloquea la fila de la semana (`FOR SHARE`) hasta el final del cambio.
+- Al añadir una exclusión, la cesta dice qué alimentos se han quitado, también los añadidos a mano.
 - Los avisos de "no entran por las exclusiones" se calculan al mostrar la cesta con la lista base actual; no se guardan.
 - "Volver a proponer" toma los precios actuales del catálogo: es una cesta nueva.
 - Sin lista base, la cesta empieza vacía y se llena a mano.
 
-### Pendiente para el PR 5
-- Cambiar una cesta después de proponer el reparto: los alimentos ya repartidos no se pueden quitar (clave ajena), y el mensaje actual es genérico. Decidir si cambiar una cesta descarta el reparto propuesto.
+### Pendiente para los siguientes PR
+- **PR 5:** cambiar una cesta después de proponer el reparto. Los alimentos ya repartidos no se pueden quitar (clave ajena) y el mensaje actual es genérico. Decidir si cambiar una cesta descarta el reparto propuesto.
+- **PR 6:** "Enviar" debe pasar la semana a `enviada` con `SELECT ... FOR UPDATE`, para esperar a los cambios de cestas en curso.
 
 ## [0.4.0] - 2026-11-15
 

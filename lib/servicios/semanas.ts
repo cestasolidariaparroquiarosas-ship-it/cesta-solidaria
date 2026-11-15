@@ -307,7 +307,8 @@ export async function plantillaDeLista(cliente: SupabaseClient, listaId: string)
  * - items con valor: sustituye todos los alimentos (la propuesta de R1). El precio y
  *   la unidad se copian del catálogo en ese momento.
  * - items nulo: conserva los alimentos, salvo los que choquen con las exclusiones, que
- *   se quitan. `quitados` dice cuántos.
+ *   se quitan. `quitados` dice cuáles (ids de alimento).
+ * En la edición, la cesta tiene que ser de la semana `semanaId` ("no_encontrado" si no).
  * "excluido" si algún alimento de `items` choca (el catálogo cambió mientras tanto);
  * "no_editable" si la semana ya se envió; "en_uso" si la semana o la lista no existen.
  */
@@ -319,7 +320,7 @@ export async function guardarCesta(
     datos: DatosCesta;
     items: { alimento_id: string; cantidad: number }[] | null;
   },
-): Promise<Resultado<{ id: string; quitados: number }>> {
+): Promise<Resultado<{ id: string; quitados: string[] }>> {
   if ((id !== null && !UUID.test(id)) || !UUID.test(semanaId)) return fallo("no_encontrado");
   const { data, error } = await cliente.rpc("guardar_cesta", {
     p_id: id,
@@ -332,7 +333,7 @@ export async function guardarCesta(
     p_items: items,
   });
   if (error) return fallo(traducirError(error));
-  const r = data as { id: string; quitados: number };
+  const r = data as { id: string; quitados: string[] };
   return ok({ id: r.id, quitados: r.quitados });
 }
 
@@ -353,17 +354,24 @@ export async function anadirACesta(
 }
 
 /** Solo cambia la cantidad: el precio y la unidad copiados se conservan (CA-08). */
-export async function cambiarCantidadCesta(cliente: SupabaseClient, itemId: string, cantidad: number): Promise<Resultado> {
-  if (!UUID.test(itemId)) return fallo("no_encontrado");
-  return cambiarUna(cliente.from("cesta_items").update({ cantidad }, { count: "exact" }).eq("id", itemId));
+export async function cambiarCantidadCesta(
+  cliente: SupabaseClient,
+  cestaId: string,
+  itemId: string,
+  cantidad: number,
+): Promise<Resultado> {
+  if (!UUID.test(cestaId) || !UUID.test(itemId)) return fallo("no_encontrado");
+  return cambiarUna(
+    cliente.from("cesta_items").update({ cantidad }, { count: "exact" }).eq("id", itemId).eq("cesta_id", cestaId),
+  );
 }
 
-export async function quitarDeCesta(cliente: SupabaseClient, itemId: string): Promise<Resultado> {
-  if (!UUID.test(itemId)) return fallo("no_encontrado");
-  return cambiarUna(cliente.from("cesta_items").delete({ count: "exact" }).eq("id", itemId));
+export async function quitarDeCesta(cliente: SupabaseClient, cestaId: string, itemId: string): Promise<Resultado> {
+  if (!UUID.test(cestaId) || !UUID.test(itemId)) return fallo("no_encontrado");
+  return cambiarUna(cliente.from("cesta_items").delete({ count: "exact" }).eq("id", itemId).eq("cesta_id", cestaId));
 }
 
-export async function eliminarCesta(cliente: SupabaseClient, id: string): Promise<Resultado> {
-  if (!UUID.test(id)) return fallo("no_encontrado");
-  return cambiarUna(cliente.from("cestas").delete({ count: "exact" }).eq("id", id));
+export async function eliminarCesta(cliente: SupabaseClient, semanaId: string, id: string): Promise<Resultado> {
+  if (!UUID.test(semanaId) || !UUID.test(id)) return fallo("no_encontrado");
+  return cambiarUna(cliente.from("cestas").delete({ count: "exact" }).eq("id", id).eq("semana_id", semanaId));
 }
