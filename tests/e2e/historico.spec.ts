@@ -114,7 +114,7 @@ test.describe("histórico en escritorio", () => {
     await expect(page.getByRole("status")).toHaveText("Semana cerrada: ya está en el histórico.");
     await expect(page.getByRole("button", { name: "Cerrar la semana" })).toHaveCount(0);
 
-    await page.getByRole("link", { name: "Histórico" }).click();
+    await page.getByRole("link", { name: "Histórico", exact: true }).click();
     const fila = page.getByRole("list", { name: "Semanas cerradas" }).getByRole("link", { name: new RegExp(`Entrega del ${formatearFecha(fecha)}`) });
     await expect(fila).toContainText("1 confirmada · 1 entregada · 1 no pudo");
     await fila.click();
