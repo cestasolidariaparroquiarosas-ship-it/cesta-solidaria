@@ -22,7 +22,7 @@ export default async function PaginaEtiquetas({ searchParams }: PageProps<"/alim
   return (
     <section className="flex max-w-xl flex-col gap-4">
       <Volver href="/alimentos" texto="Alimentos" />
-      <h1 className="text-2xl font-semibold">Etiquetas de exclusión</h1>
+      <h1 className="text-3xl font-bold">Etiquetas de exclusión</h1>
       <p className="text-sm text-stone-600">
         Sirven para dos cosas: en cada alimento se marca lo que <strong>contiene</strong>, y en cada
         cesta lo que la familia <strong>no puede tomar</strong>. Son restricciones alimentarias,
@@ -35,7 +35,7 @@ export default async function PaginaEtiquetas({ searchParams }: PageProps<"/alim
           No se han podido cargar las etiquetas. Recarga la página.
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
+        <ul className="flex flex-col divide-y divide-stone-200 overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm [&>li:nth-child(even)]:bg-stone-50">
           {etiquetas.valor.map((e) => (
             <FilaEtiqueta
               key={`${e.id}|${e.nombre}`}
@@ -48,7 +48,7 @@ export default async function PaginaEtiquetas({ searchParams }: PageProps<"/alim
         </ul>
       )}
 
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
+      <div className="rounded-xl border border-stone-300 bg-white p-4 shadow-sm">
         <FormularioEtiqueta accion={crearEtiquetaAccion} />
       </div>
     </section>

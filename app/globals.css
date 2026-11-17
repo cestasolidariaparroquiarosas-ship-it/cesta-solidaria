@@ -4,6 +4,12 @@
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Fondo de página algo más oscuro que las tarjetas, para que cada parte se vea separada
+   (iteración 0003, spec §2). */
+@theme {
+  --color-fondo: #eceae5;
+}
+
 body {
-  @apply bg-stone-50 text-stone-900;
+  @apply bg-fondo text-stone-900;
 }

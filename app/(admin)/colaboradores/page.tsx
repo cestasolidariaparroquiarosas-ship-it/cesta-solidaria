@@ -5,8 +5,9 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 import { formatearFecha } from "@/lib/fechas";
 import { ESTADOS_COLABORADOR, NOMBRE_ESTADO, esEstadoColaborador } from "@/lib/dominio/colaboradores";
 import { listarColaboradores } from "@/lib/servicios/colaboradores";
-import { BOTON_PRINCIPAL } from "../_ui/estilos";
+import { BOTON_PRINCIPAL, LISTA } from "../_ui/estilos";
 import { EtiquetaEstado } from "./etiqueta-estado";
+import { CabeceraColumnas } from "../_ui/tarjeta";
 
 export const metadata: Metadata = { title: "Colaboradores · Cesta solidaria" };
 
@@ -31,14 +32,14 @@ export default async function PaginaColaboradores({ searchParams }: PageProps<"/
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Colaboradores</h1>
+        <h1 className="text-3xl font-bold">Colaboradores</h1>
         <Link href="/colaboradores/nuevo" className={BOTON_PRINCIPAL}>
           Nuevo colaborador
         </Link>
       </div>
 
       {avisoTexto && (
-        <p role="status" className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        <p role="status" className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-950">
           {avisoTexto}
         </p>
       )}
@@ -51,8 +52,8 @@ export default async function PaginaColaboradores({ searchParams }: PageProps<"/
               key={f.nombre}
               href={f.valor ? `/colaboradores?estado=${f.valor}` : "/colaboradores"}
               aria-current={actual ? "page" : undefined}
-              className={`rounded-full border px-3 py-1 ${
-                actual ? "border-emerald-700 bg-emerald-700 text-white" : "border-stone-300 bg-white hover:bg-stone-100"
+              className={`rounded-full border px-3.5 py-1.5 font-medium ${
+                actual ? "border-emerald-700 bg-emerald-700 text-white" : "border-stone-400 bg-white hover:bg-stone-100"
               }`}
             >
               {f.nombre}
@@ -70,29 +71,36 @@ export default async function PaginaColaboradores({ searchParams }: PageProps<"/
           {estado ? "No hay colaboradores con este estado." : "Todavía no hay colaboradores."}
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
-          {resultado.valor.map((c) => (
-            <li key={c.id}>
-              <Link
-                href={`/colaboradores/${c.id}`}
-                className="flex flex-col gap-1 px-4 py-3 hover:bg-stone-50 sm:flex-row sm:items-center sm:gap-4"
-              >
-                <span className="min-w-0 sm:w-1/3">
-                  <span className="block truncate font-medium">{c.nombre}</span>
-                  <span className="block truncate text-sm text-stone-600">{c.email}</span>
-                </span>
-                <span className="sm:w-1/3">
-                  <EtiquetaEstado colaborador={c} />
-                </span>
-                <span className="text-sm text-stone-600 sm:w-1/3 sm:text-right">
-                  {c.ultima_participacion
-                    ? `Última vez: ${formatearFecha(c.ultima_participacion)}`
-                    : "Aún no ha participado"}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
+          <CabeceraColumnas>
+            <span className="w-1/3">Colaborador</span>
+            <span className="w-1/3">Estado</span>
+            <span className="w-1/3 text-right">Última participación</span>
+          </CabeceraColumnas>
+        <ul className={LISTA}>
+            {resultado.valor.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/colaboradores/${c.id}`}
+                  className="flex flex-col gap-1 px-4 py-3 hover:bg-emerald-50 sm:flex-row sm:items-center sm:gap-4"
+                >
+                  <span className="min-w-0 sm:w-1/3">
+                    <span className="block truncate font-medium">{c.nombre}</span>
+                    <span className="block truncate text-sm text-stone-600">{c.email}</span>
+                  </span>
+                  <span className="sm:w-1/3">
+                    <EtiquetaEstado colaborador={c} />
+                  </span>
+                  <span className="text-sm text-stone-600 sm:w-1/3 sm:text-right">
+                    {c.ultima_participacion
+                      ? `Última vez: ${formatearFecha(c.ultima_participacion)}`
+                      : "Aún no ha participado"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

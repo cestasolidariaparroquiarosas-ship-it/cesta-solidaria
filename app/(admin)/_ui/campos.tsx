@@ -5,7 +5,7 @@
 // enlazan con aria-describedby, para que el lector de pantalla no los lea dos veces.
 
 import { useId, type ReactNode } from "react";
-import { ETIQUETA } from "./estilos";
+import { AYUDA, ETIQUETA } from "./estilos";
 
 /** Lo mínimo que devuelve una acción de servidor con useActionState. */
 export type EstadoConErrores = { error?: string; errores?: Partial<Record<string, string>> };
@@ -39,7 +39,7 @@ export function Campo({
         "aria-describedby": describir(ayuda && `${id}-ayuda`, error && `${id}-error`),
       })}
       {ayuda && (
-        <p id={`${id}-ayuda`} className="text-xs text-stone-500">
+        <p id={`${id}-ayuda`} className={AYUDA}>
           {ayuda}
         </p>
       )}
@@ -78,7 +78,7 @@ export function Casilla({
           defaultChecked={marcada}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="mt-1 size-4 shrink-0"
+          className="mt-0.5 size-5 shrink-0 accent-emerald-700"
         />
         <label htmlFor={id}>{texto}</label>
       </div>

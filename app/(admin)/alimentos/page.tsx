@@ -4,8 +4,10 @@ import { requerirAdmin } from "@/lib/auth";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { formatearEuros, textoContiene } from "@/lib/dominio/catalogo";
 import { listarAlimentos, listarEtiquetas } from "@/lib/servicios/catalogo";
-import { BOTON_PRINCIPAL, BOTON_SECUNDARIO } from "../_ui/estilos";
+import { BOTON_PRINCIPAL, BOTON_SECUNDARIO, LISTA } from "../_ui/estilos";
 import { Aviso } from "../_ui/aviso";
+import { Etiqueta } from "../_ui/etiqueta";
+import { CabeceraColumnas } from "../_ui/tarjeta";
 
 export const metadata: Metadata = { title: "Alimentos · Cesta solidaria" };
 
@@ -29,7 +31,7 @@ export default async function PaginaAlimentos({ searchParams }: PageProps<"/alim
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Alimentos</h1>
+        <h1 className="text-3xl font-bold">Alimentos</h1>
         <div className="flex flex-wrap gap-2">
           <Link href="/alimentos/etiquetas" className={BOTON_SECUNDARIO}>
             Etiquetas
@@ -44,11 +46,11 @@ export default async function PaginaAlimentos({ searchParams }: PageProps<"/alim
 
       <p className="text-sm">
         {todos ? (
-          <Link href="/alimentos" className="text-emerald-800 hover:underline">
+          <Link href="/alimentos" className="font-medium text-emerald-800 hover:underline">
             Ver solo los activos
           </Link>
         ) : (
-          <Link href="/alimentos?ver=todos" className="text-emerald-800 hover:underline">
+          <Link href="/alimentos?ver=todos" className="font-medium text-emerald-800 hover:underline">
             Ver también los desactivados
           </Link>
         )}
@@ -61,33 +63,40 @@ export default async function PaginaAlimentos({ searchParams }: PageProps<"/alim
       ) : alimentos.valor.length === 0 ? (
         <p className="text-stone-600">Todavía no hay alimentos en el catálogo.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
-          {alimentos.valor.map((a) => {
-            const contiene = textoContiene(a.etiquetas.map((id) => nombreEtiqueta.get(id) ?? "?"));
-            return (
-              <li key={a.id}>
-                <Link
-                  href={`/alimentos/${a.id}`}
-                  className="flex flex-col gap-1 px-4 py-3 hover:bg-stone-50 sm:flex-row sm:items-center sm:gap-4"
-                >
-                  <span className="min-w-0 sm:w-2/5">
-                    <span className="block truncate font-medium">
-                      {a.nombre}
-                      {!a.activo && (
-                        <span className="ml-2 rounded-full bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-700">
-                          Desactivado
-                        </span>
-                      )}
+        <div className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
+          <CabeceraColumnas>
+            <span className="w-2/5">Alimento</span>
+            <span className="w-1/5">Precio aprox.</span>
+            <span className="w-2/5">Contiene</span>
+          </CabeceraColumnas>
+        <ul className={LISTA}>
+            {alimentos.valor.map((a) => {
+              const contiene = textoContiene(a.etiquetas.map((id) => nombreEtiqueta.get(id) ?? "?"));
+              return (
+                <li key={a.id}>
+                  <Link
+                    href={`/alimentos/${a.id}`}
+                    className="flex flex-col gap-1 px-4 py-3 hover:bg-emerald-50 sm:flex-row sm:items-center sm:gap-4"
+                  >
+                    <span className="min-w-0 sm:w-2/5">
+                      <span className="block truncate font-medium">
+                        {a.nombre}
+                        {!a.activo && (
+                          <span className="ml-2">
+                            <Etiqueta tono="gris">Desactivado</Etiqueta>
+                          </span>
+                        )}
+                      </span>
+                      <span className="block truncate text-sm text-stone-600">{a.unidad}</span>
                     </span>
-                    <span className="block truncate text-sm text-stone-600">{a.unidad}</span>
-                  </span>
-                  <span className="text-sm sm:w-1/5">{formatearEuros(a.precio_aprox)}</span>
-                  <span className="text-sm text-stone-600 sm:w-2/5">{contiene}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                    <span className="text-sm sm:w-1/5">{formatearEuros(a.precio_aprox)}</span>
+                    <span className="text-sm text-stone-600 sm:w-2/5">{contiene}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </section>
   );

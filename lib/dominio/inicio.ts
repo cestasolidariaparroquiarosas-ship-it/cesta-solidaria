@@ -104,3 +104,27 @@ export function avisosSemana(d: {
   }
   return avisos;
 }
+
+export type GrupoSeguimiento = "propuesta" | "esperando" | "confirmadas" | "noPueden";
+
+const GRUPO_DE: Record<EstadoAsignacion, GrupoSeguimiento> = {
+  propuesta: "propuesta",
+  pendiente: "esperando",
+  confirmada: "confirmadas",
+  rechazada: "noPueden",
+  sin_respuesta: "noPueden",
+};
+
+/**
+ * Grupos del seguimiento (spec 0003, P2): esperando respuesta, confirmadas y no pueden o
+ * no respondieron, en ese orden y sin los vacíos. Si quedara alguna propuesta sin enviar,
+ * va la primera, para que no se pierda. Dentro de cada grupo se respeta el orden recibido.
+ */
+export function gruposSeguimiento<T extends { estado: EstadoAsignacion }>(
+  asignaciones: T[],
+): { grupo: GrupoSeguimiento; asignaciones: T[] }[] {
+  const orden: GrupoSeguimiento[] = ["propuesta", "esperando", "confirmadas", "noPueden"];
+  return orden
+    .map((grupo) => ({ grupo, asignaciones: asignaciones.filter((a) => GRUPO_DE[a.estado] === grupo) }))
+    .filter((g) => g.asignaciones.length > 0);
+}

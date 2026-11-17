@@ -21,7 +21,7 @@ Cada semana preparas las cestas de las familias, la app propone qué colaborador
 
 ## Cada semana
 
-En **Semanas → Nueva semana** se crea la semana. Dentro de la semana hay cuatro pasos:
+En **Semanas → Nueva semana** se crea la semana. Dentro de la semana hay cuatro pasos. La barra de arriba los resume: marca los que ya están hechos, resalta el que toca y lleva a cada uno con un clic.
 
 ### 1. Datos
 - La **fecha de entrega**.
@@ -51,7 +51,7 @@ Pulsa **Enviar los correos**. **Después de enviar ya no se pueden cambiar las c
 
 Cada colaborador recibe **un solo correo** con su lista, el gasto aproximado, el plazo y dos enlaces: **Puedo llevarlo** y **No puedo esta vez**. Cada enlace abre una página con un resumen y los botones **Sí, puedo llevarlo** y **No puedo esta vez**: solo abrir el enlace no cambia nada, hay que pulsar el botón. Al pie del correo está el enlace para **darse de baja**, que también pide confirmar en la página.
 
-En esta misma pantalla ves cómo va cada uno: «Esperando respuesta», «Confirmada», «No puede» o «Sin respuesta». Desde el día de la entrega, junto a cada colaborador confirmado aparece **Marcar como entregado**.
+En esta misma pantalla ves cómo va cada uno: «Esperando respuesta», «Confirmada», «No puede» o «Sin respuesta». Salen agrupados: primero quienes aún no han respondido, después los confirmados y al final quienes no pueden. Desde el día de la entrega, junto a cada colaborador confirmado aparece **Marcar como entregado**.
 
 ## Lo que hace la app sola
 

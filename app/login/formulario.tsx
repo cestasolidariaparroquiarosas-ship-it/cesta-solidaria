@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { iniciarSesion, type EstadoLogin } from "./acciones";
+import { BOTON_PRINCIPAL, ENTRADA } from "@/app/(admin)/_ui/estilos";
 
 const estadoInicial: EstadoLogin = {};
 
@@ -17,7 +18,7 @@ export function FormularioLogin() {
           type="email"
           autoComplete="username"
           required
-          className="rounded-md border border-stone-300 px-3 py-2 text-base font-normal"
+          className={ENTRADA}
         />
       </label>
       <label className="flex flex-col gap-1 text-sm font-medium">
@@ -27,7 +28,7 @@ export function FormularioLogin() {
           type="password"
           autoComplete="current-password"
           required
-          className="rounded-md border border-stone-300 px-3 py-2 text-base font-normal"
+          className={ENTRADA}
         />
       </label>
       {estado.error && (
@@ -38,7 +39,7 @@ export function FormularioLogin() {
       <button
         type="submit"
         disabled={enviando}
-        className="rounded-md bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800 disabled:opacity-60"
+        className={BOTON_PRINCIPAL}
       >
         {enviando ? "Entrando…" : "Entrar"}
       </button>

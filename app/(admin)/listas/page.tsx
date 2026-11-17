@@ -6,6 +6,7 @@ import { listarListas } from "@/lib/servicios/catalogo";
 import { crearListaAccion } from "./acciones";
 import { FormularioNombreLista } from "./formularios";
 import { Aviso } from "../_ui/aviso";
+import { Etiqueta } from "../_ui/etiqueta";
 
 export const metadata: Metadata = { title: "Listas base · Cesta solidaria" };
 
@@ -17,8 +18,8 @@ export default async function PaginaListas({ searchParams }: PageProps<"/listas"
   const listas = await listarListas(await crearClienteServidor());
 
   return (
-    <section className="flex max-w-3xl flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Listas base</h1>
+    <section className="flex flex-col gap-4">
+      <h1 className="text-3xl font-bold">Listas base</h1>
       <p className="text-sm text-stone-600">
         Plantillas para proponer cada cesta: qué alimentos y cuántas unidades al mes por adulto y por
         niño. La predeterminada es la que se usa si no eliges otra.
@@ -32,18 +33,18 @@ export default async function PaginaListas({ searchParams }: PageProps<"/listas"
       ) : listas.valor.length === 0 ? (
         <p className="text-stone-600">Todavía no hay listas base.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
+        <ul className="flex flex-col divide-y divide-stone-200 overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm [&>li:nth-child(even)]:bg-stone-50">
           {listas.valor.map((l) => (
             <li key={l.id}>
               <Link
                 href={`/listas/${l.id}`}
-                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-stone-50"
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-emerald-50"
               >
                 <span className="min-w-0 font-medium">
                   {l.nombre}
                   {l.predeterminada && (
-                    <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900">
-                      Predeterminada
+                    <span className="ml-2">
+                      <Etiqueta tono="verde">Predeterminada</Etiqueta>
                     </span>
                   )}
                 </span>
@@ -56,7 +57,7 @@ export default async function PaginaListas({ searchParams }: PageProps<"/listas"
         </ul>
       )}
 
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
+      <div className="rounded-xl border border-stone-300 bg-white p-4 shadow-sm">
         <FormularioNombreLista accion={crearListaAccion} etiqueta="Nueva lista" textoBoton="Crear lista" />
       </div>
     </section>

@@ -76,7 +76,7 @@ export function FormularioSemana({
       </Campo>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">Plazo para responder</legend>
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-stone-600">
           Hora de Madrid. Tiene que terminar antes del día de la entrega.
         </p>
         <div className="flex flex-wrap gap-4">
@@ -227,7 +227,7 @@ export function FormularioCesta({
       </Campo>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">Exclusiones</legend>
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-stone-600">
           Lo que esta familia no puede recibir. Son restricciones alimentarias: no anotes el motivo.
         </p>
         {etiquetas.length === 0 ? (

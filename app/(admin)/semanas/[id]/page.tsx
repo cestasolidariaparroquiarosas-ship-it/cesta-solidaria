@@ -5,7 +5,7 @@ import { requerirAdmin } from "@/lib/auth";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { formatearCantidad, formatearEuros } from "@/lib/dominio/catalogo";
 import { textoSin } from "@/lib/dominio/cesta";
-import { semanaEditable } from "@/lib/dominio/semanas";
+import { pasosSemana, semanaEditable } from "@/lib/dominio/semanas";
 import { fechaHoraEnMadrid, formatearFecha, formatearFechaHora, hoyEnMadrid } from "@/lib/fechas";
 import { listarEtiquetas } from "@/lib/servicios/catalogo";
 import { obtenerReparto } from "@/lib/servicios/reparto";
@@ -15,7 +15,9 @@ import { FormularioEliminar, FormularioSemana } from "../formularios";
 import { EstadoSemanaEtiqueta } from "../estado-semana";
 import { Aviso, Volver } from "../../_ui/aviso";
 import { Envio } from "./_envio/seguimiento";
-import { BOTON_PRINCIPAL, BOTON_SECUNDARIO } from "../../_ui/estilos";
+import { BOTON_PRINCIPAL, BOTON_SECUNDARIO, FILA_ENLACE, LISTA } from "../../_ui/estilos";
+import { Tarjeta } from "../../_ui/tarjeta";
+import { PasosSemana } from "./pasos";
 
 export const metadata: Metadata = { title: "Semana · Cesta solidaria" };
 
@@ -70,130 +72,179 @@ export default async function PaginaSemana({ params, searchParams }: PageProps<"
   const plazo = fechaHoraEnMadrid(s.plazo_confirmacion);
   const costeTotal = s.cestas.reduce((t, c) => t + Math.round(c.coste * 100), 0) / 100;
 
+  const confirmadas = reparto.valor.filter((a) => a.estado === "confirmada").length;
+  const pasos = pasosSemana({ estado: s.estado, cestas: s.cestas.length, enReparto: colaboradoresEnReparto });
+  const resumen = {
+    datos: `${formatearEuros(s.precio_base)} · plazo ${formatearFecha(plazo.fecha)}`,
+    cestas: s.cestas.length
+      ? `${s.cestas.length} cesta${s.cestas.length === 1 ? "" : "s"} · ${formatearEuros(costeTotal)}`
+      : "Sin cestas",
+    reparto: colaboradoresEnReparto
+      ? `${colaboradoresEnReparto} colaborador${colaboradoresEnReparto === 1 ? "" : "es"}`
+      : "Sin reparto",
+    envio:
+      s.estado === "borrador"
+        ? "Sin enviar"
+        : s.estado === "cerrada"
+          ? "Semana cerrada"
+          : `${confirmadas} de ${colaboradoresEnReparto} confirmada${colaboradoresEnReparto === 1 ? "" : "s"}`,
+  };
+  // Enviada o cerrada: los tres primeros pasos, en resumen y uno junto a otro (decisión 2).
+  const compacta = !editable;
+
+  const datos = (
+    <Tarjeta id="datos" titulo="1. Datos">
+      {editable ? (
+        <FormularioSemana
+          key={`${s.fecha_entrega}|${s.precio_base}|${s.plazo_confirmacion}`}
+          accion={guardarSemanaAccion.bind(null, s.id)}
+          hoy={hoyEnMadrid()}
+          inicial={{
+            fecha_entrega: s.fecha_entrega,
+            precio_base: formatearCantidad(s.precio_base),
+            plazo_fecha: plazo.fecha,
+            plazo_hora: plazo.hora,
+          }}
+          textoBoton="Guardar datos"
+        />
+      ) : (
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+          <dt className="text-stone-600">Precio base</dt>
+          <dd className="font-semibold">{formatearEuros(s.precio_base)}</dd>
+          <dt className="text-stone-600">Plazo</dt>
+          <dd className="font-semibold">{formatearFechaHora(s.plazo_confirmacion)}</dd>
+        </dl>
+      )}
+    </Tarjeta>
+  );
+
+  const cestas = (
+    <Tarjeta
+      id="cestas"
+      titulo="2. Cestas"
+      cuerpo={false}
+      extra={
+        editable ? (
+          <Link href={`/semanas/${s.id}/cestas/nueva`} className={BOTON_PRINCIPAL}>
+            Añadir cesta
+          </Link>
+        ) : s.cestas.length > 0 ? (
+          <span className="text-sm text-stone-700">
+            Total <strong>{formatearEuros(costeTotal)}</strong>
+          </span>
+        ) : undefined
+      }
+    >
+      {s.cestas.length === 0 ? (
+        <p className="p-4 text-stone-600">Todavía no hay cestas.</p>
+      ) : (
+        <>
+          <ul className={LISTA}>
+            {s.cestas.map((c) => {
+              const sin = textoSin(c.exclusiones.map((e) => nombreEtiqueta.get(e) ?? "?"));
+              return (
+                <li key={c.id}>
+                  <Link href={`/semanas/${s.id}/cestas/${c.id}`} className={FILA_ENLACE}>
+                    <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <span className="min-w-0 break-words font-semibold">{c.identificador_receptor}</span>
+                      <span className="text-sm whitespace-nowrap text-stone-700">
+                        {compacta
+                          ? formatearEuros(c.coste)
+                          : `${c.unidades} unidad${c.unidades === 1 ? "" : "es"} · ${formatearEuros(c.coste)}`}
+                      </span>
+                    </span>
+                    <span className="text-sm text-stone-600">
+                      {personas(c.adultos, c.ninos)}
+                      {sin && ` · ${sin}`}
+                    </span>
+                    {c.choques > 0 && (
+                      <span className="text-sm font-semibold text-red-800">
+                        Revisar: {c.choques} alimento{c.choques === 1 ? " choca" : "s chocan"} con sus exclusiones
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          {!compacta && (
+            <p className="border-t border-stone-300 bg-stone-50 px-4 py-3">
+              <span className="font-semibold">Coste total:</span> {formatearEuros(costeTotal)} en {s.cestas.length}{" "}
+              cesta
+              {s.cestas.length === 1 ? "" : "s"}.
+            </p>
+          )}
+        </>
+      )}
+    </Tarjeta>
+  );
+
+  const repartoTarjeta = (
+    <Tarjeta id="reparto" titulo="3. Reparto">
+      <p>
+        {colaboradoresEnReparto > 0
+          ? `${colaboradoresEnReparto} colaborador${colaboradoresEnReparto === 1 ? "" : "es"} con alimentos asignados.`
+          : s.cestas.length > 0
+            ? "Todavía no hay reparto."
+            : "Primero añade las cestas."}
+      </p>
+      {(colaboradoresEnReparto > 0 || (editable && s.cestas.length > 0)) && (
+        <div>
+          <Link
+            href={`/semanas/${s.id}/reparto`}
+            className={colaboradoresEnReparto > 0 && !editable ? BOTON_SECUNDARIO : BOTON_PRINCIPAL}
+          >
+            {colaboradoresEnReparto > 0 ? "Ver el reparto" : "Preparar el reparto"}
+          </Link>
+        </div>
+      )}
+    </Tarjeta>
+  );
+
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {s.estado === "cerrada" ? (
         <Volver href="/historico" texto="Histórico" />
       ) : (
         <Volver href="/semanas" texto="Semanas" />
       )}
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-semibold">Entrega del {formatearFecha(s.fecha_entrega)}</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-3xl font-bold">Entrega del {formatearFecha(s.fecha_entrega)}</h1>
         <EstadoSemanaEtiqueta estado={s.estado} />
       </div>
       <Aviso clave={aviso} textos={AVISOS} />
 
-      <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-lg font-semibold">1. Datos</h2>
-        {editable ? (
-          <FormularioSemana
-            key={`${s.fecha_entrega}|${s.precio_base}|${s.plazo_confirmacion}`}
-            accion={guardarSemanaAccion.bind(null, s.id)}
-            hoy={hoyEnMadrid()}
-            inicial={{
-              fecha_entrega: s.fecha_entrega,
-              precio_base: formatearCantidad(s.precio_base),
-              plazo_fecha: plazo.fecha,
-              plazo_hora: plazo.hora,
-            }}
-            textoBoton="Guardar datos"
-          />
-        ) : (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            <dt className="text-stone-600">Precio base</dt>
-            <dd>{formatearEuros(s.precio_base)}</dd>
-            <dt className="text-stone-600">Plazo</dt>
-            <dd>{formatearFechaHora(s.plazo_confirmacion)}</dd>
-          </dl>
-        )}
-      </section>
+      <PasosSemana pasos={pasos} resumen={resumen} />
 
-      <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">2. Cestas</h2>
-          {editable && (
-            <Link href={`/semanas/${s.id}/cestas/nueva`} className={BOTON_PRINCIPAL}>
-              Añadir cesta
-            </Link>
-          )}
+      {compacta ? (
+        <div className="grid items-start gap-4 lg:grid-cols-3">
+          {datos}
+          {cestas}
+          {repartoTarjeta}
         </div>
-        {s.cestas.length === 0 ? (
-          <p className="text-sm text-stone-600">Todavía no hay cestas.</p>
-        ) : (
-          <>
-            <ul className="-mx-4 flex flex-col divide-y divide-stone-200 border-y border-stone-200">
-              {s.cestas.map((c) => {
-                const sin = textoSin(c.exclusiones.map((e) => nombreEtiqueta.get(e) ?? "?"));
-                return (
-                  <li key={c.id}>
-                    <Link
-                      href={`/semanas/${s.id}/cestas/${c.id}`}
-                      className="flex flex-col gap-1 px-4 py-3 hover:bg-stone-50"
-                    >
-                      <span className="flex flex-wrap items-baseline justify-between gap-x-3">
-                        <span className="min-w-0 break-words font-medium">{c.identificador_receptor}</span>
-                        <span className="text-sm text-stone-600">
-                          {c.unidades} unidad{c.unidades === 1 ? "" : "es"} · {formatearEuros(c.coste)}
-                        </span>
-                      </span>
-                      <span className="text-sm text-stone-600">
-                        {personas(c.adultos, c.ninos)}
-                        {sin && ` · ${sin}`}
-                      </span>
-                      {c.choques > 0 && (
-                        <span className="text-sm font-medium text-red-800">
-                          Revisar: {c.choques} alimento{c.choques === 1 ? " choca" : "s chocan"} con sus exclusiones
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-            <p className="text-sm">
-              <span className="font-medium">Coste total:</span> {formatearEuros(costeTotal)} en {s.cestas.length} cesta
-              {s.cestas.length === 1 ? "" : "s"}.
-            </p>
-          </>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">3. Reparto</h2>
-          {(colaboradoresEnReparto > 0 || (editable && s.cestas.length > 0)) && (
-            <Link
-              href={`/semanas/${s.id}/reparto`}
-              className={colaboradoresEnReparto > 0 ? BOTON_SECUNDARIO : BOTON_PRINCIPAL}
-            >
-              {colaboradoresEnReparto > 0 ? "Ver el reparto" : "Preparar el reparto"}
-            </Link>
-          )}
+      ) : (
+        <div className="flex max-w-3xl flex-col gap-5">
+          {datos}
+          {cestas}
+          {repartoTarjeta}
         </div>
-        <p className="text-sm text-stone-600">
-          {colaboradoresEnReparto > 0
-            ? `${colaboradoresEnReparto} colaborador${colaboradoresEnReparto === 1 ? "" : "es"} con alimentos asignados.`
-            : s.cestas.length > 0
-              ? "Todavía no hay reparto."
-              : "Primero añade las cestas."}
-        </p>
-      </section>
+      )}
 
-      <section id="envio" className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-lg font-semibold">4. Envío y respuestas</h2>
+      <section id="envio" className="scroll-mt-4 overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
         <Envio semana={s} asignaciones={reparto.valor} />
       </section>
 
       {editable && (
-        <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-          <h2 className="text-lg font-semibold">Eliminar</h2>
-          <p className="text-sm text-stone-600">Se borra la semana con todas sus cestas.</p>
-          <FormularioEliminar
-            accion={eliminarSemanaAccion.bind(null, s.id)}
-            texto="Quiero eliminar esta semana y sus cestas."
-            boton="Eliminar semana"
-          />
-        </section>
+        <div className="max-w-3xl">
+          <Tarjeta titulo="Eliminar" peligro>
+            <p className="text-stone-700">Se borra la semana con todas sus cestas.</p>
+            <FormularioEliminar
+              accion={eliminarSemanaAccion.bind(null, s.id)}
+              texto="Quiero eliminar esta semana y sus cestas."
+              boton="Eliminar semana"
+            />
+          </Tarjeta>
+        </div>
       )}
     </div>
   );

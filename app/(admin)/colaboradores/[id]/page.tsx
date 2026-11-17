@@ -27,9 +27,11 @@ const AVISOS: Record<string, string> = {
 
 function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-      <h2 className="text-lg font-semibold">{titulo}</h2>
-      {children}
+    <section className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
+      <h2 className="border-b border-stone-300 bg-stone-100 px-4 py-3 text-lg font-bold">{titulo}</h2>
+      <div className="flex flex-col gap-3 p-4">
+        {children}
+      </div>
     </section>
   );
 }
@@ -49,11 +51,11 @@ export default async function PaginaColaborador({ params, searchParams }: PagePr
 
   return (
     <div className="flex max-w-xl flex-col gap-4">
-      <Link href="/colaboradores" className="text-sm text-emerald-800 hover:underline">
+      <Link href="/colaboradores" className="text-sm font-medium text-emerald-800 hover:underline">
         ← Colaboradores
       </Link>
       <div className="flex flex-col gap-1">
-        <h1 className="break-words text-2xl font-semibold">{c.nombre}</h1>
+        <h1 className="break-words text-3xl font-bold">{c.nombre}</h1>
         <div>
           <EtiquetaEstado colaborador={c} />
         </div>
@@ -65,7 +67,7 @@ export default async function PaginaColaborador({ params, searchParams }: PagePr
       </div>
 
       {avisoTexto && (
-        <p role="status" className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        <p role="status" className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-950">
           {avisoTexto}
         </p>
       )}

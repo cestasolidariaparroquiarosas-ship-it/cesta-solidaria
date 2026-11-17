@@ -3,6 +3,25 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versiones según [SemVer](https://semver.org/lang/es/).
 Cada versión enlaza los artefactos de la metodología que la originaron (`docs/sdlc/`).
 
+## [1.2.0] - 2026-11-17
+
+Origen: [intent](docs/sdlc/0003-presentacion/intent.md) · [spec](docs/sdlc/0003-presentacion/spec.md) · [plan](docs/sdlc/0003-presentacion/plan.md), iteración 0003. Solo cambia el aspecto: mismas reglas, mismos textos y sin migraciones.
+
+### Cambiado
+- **Colores con más contraste:** fondo de página más oscuro, tarjetas con borde y sombra, y una franja de cabecera en cada tarjeta.
+- **Cabecera verde** con la sección actual resaltada. En el móvil, las secciones van en una sola fila que se desliza. El acceso y las páginas de los enlaces del correo llevan la misma franja.
+- **Detalle de semana:** barra con los cuatro pasos, los hechos marcados y el actual resaltado. Con la semana enviada o cerrada, los tres primeros pasos van en resumen, uno junto a otro.
+- **Envío y respuestas:** agrupadas por estado (esperan respuesta, confirmadas, no pueden), con una barra de progreso, y lo que lleva cada uno en etiquetas.
+- **Reparto:** recuadros con las cifras, tarjetas en dos columnas y una barra de gasto sobre el precio base.
+- **Inicio:** cifras grandes con icono, barra de respuestas y avisos con icono.
+- **Etiquetas de estado** más grandes, con un punto de color. «No puede» y «Sin respuesta» pasan de gris a rosa.
+- **Colaboradores y Alimentos** con encabezados de columna, y filas alternas en todas las listas.
+
+### Añadido
+- Pruebas CA-0301 a CA-0306: unitarias de las reglas P1 y P2, y e2e del menú, los pasos, los grupos, el contraste (axe-core), la cabecera en el móvil y la barra de gasto.
+- **Capturas en CI:** con los datos de prueba cargados, CI guarda capturas de las pantallas principales (artefacto `capturas` del PR).
+- Dependencia de desarrollo: `@axe-core/playwright`.
+
 ## [1.1.0] - 2026-11-15
 
 Origen: [intent](docs/sdlc/0002-datos-de-prueba/intent.md) · [spec](docs/sdlc/0002-datos-de-prueba/spec.md) · [plan](docs/sdlc/0002-datos-de-prueba/plan.md), iteración 0002. La app no cambia.

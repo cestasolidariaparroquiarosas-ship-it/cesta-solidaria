@@ -52,3 +52,6 @@ supabase/.temp
 
 # copias
 *.sql.gpg
+
+# capturas de pantalla de CI (iteración 0003)
+/capturas/

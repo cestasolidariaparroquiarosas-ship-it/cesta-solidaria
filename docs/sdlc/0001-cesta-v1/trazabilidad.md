@@ -44,6 +44,19 @@ Para cada CA del spec: dónde se comprueba. Las pruebas nombran el CA en su tít
 | CA-33 | Republicar una etiqueta anterior | O el 2026-11-15, tras publicar la 1.0.0, se republicó `v0.8.0` a mano (deploy → Run workflow): checkout de la etiqueta, primero en pruebas y después en producción, sin tocar las migraciones. Después se volvió a la `v1.0.0` igual. Pruebas en los comentarios del PR #11 |
 | CA-34 | Copia diaria cifrada y restauración comprobada | O repositorio privado `cesta-copias`, workflow `copia`: cada ejecución restaura la copia cifrada en un Supabase desechable y compara las filas de cada tabla (ver la nota) |
 
+
+## Iteración 0003: presentación
+
+| CA | Qué | Dónde se prueba |
+|---|---|---|
+| CA-0301 | El menú marca la sección actual | U `presentacion` (`seccionActual`); E `presentacion` |
+| CA-0302 | Barra de pasos según P1 | U `presentacion` (`pasosSemana`); E `presentacion` |
+| CA-0303 | Seguimiento agrupado según P2 | U `presentacion` (`gruposSeguimiento`); E `presentacion` |
+| CA-0304 | Sin fallos de contraste | E `presentacion` (axe-core, regla `color-contrast`) |
+| CA-0305 | Cabecera del móvil y sin desbordar | E `presentacion` (proyecto `movil`) y las pruebas de CA-28 |
+| CA-0306 | Barra de gasto en el reparto | E `presentacion` |
+| CA-0307 | Las pruebas de la v1.1.0 siguen pasando | CI completo |
+
 ## Nota sobre CA-34
 
 El spec dice "restaurarla en el entorno de pruebas". La restauración se comprueba en un Supabase **desechable**, que se crea vacío en la misma ejecución, y no en `cesta-pruebas`, por dos motivos:

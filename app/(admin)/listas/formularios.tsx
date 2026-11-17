@@ -6,6 +6,7 @@ import type { ItemConAlimento } from "@/lib/servicios/catalogo";
 import { Campo, Casilla, ErrorGeneral } from "../_ui/campos";
 import { BOTON_PELIGRO, BOTON_PRINCIPAL, BOTON_SECUNDARIO, ENTRADA } from "../_ui/estilos";
 import type { EstadoLista } from "./acciones";
+import { Etiqueta } from "../_ui/etiqueta";
 
 type Accion = (estado: EstadoLista, formData: FormData) => Promise<EstadoLista>;
 
@@ -164,8 +165,8 @@ export function FilaItem({
       <p className="font-medium">
         {nombre}
         {!item.alimento.activo && (
-          <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-            Desactivado: no se propondrá
+          <span className="ml-2">
+            <Etiqueta tono="ambar">Desactivado: no se propondrá</Etiqueta>
           </span>
         )}
       </p>

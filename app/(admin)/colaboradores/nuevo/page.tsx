@@ -11,11 +11,11 @@ export default async function PaginaNuevoColaborador() {
 
   return (
     <section className="flex max-w-xl flex-col gap-4">
-      <Link href="/colaboradores" className="text-sm text-emerald-800 hover:underline">
+      <Link href="/colaboradores" className="text-sm font-medium text-emerald-800 hover:underline">
         ← Colaboradores
       </Link>
-      <h1 className="text-2xl font-semibold">Nuevo colaborador</h1>
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
+      <h1 className="text-3xl font-bold">Nuevo colaborador</h1>
+      <div className="rounded-xl border border-stone-300 bg-white p-4 shadow-sm">
         <FormularioColaborador
           accion={crearColaboradorAccion}
           pedirConsentimiento

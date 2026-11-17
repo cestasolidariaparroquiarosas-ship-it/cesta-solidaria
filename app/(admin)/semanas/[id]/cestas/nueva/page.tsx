@@ -35,18 +35,18 @@ export default async function PaginaNuevaCesta({ params }: PageProps<"/semanas/[
   return (
     <div className="flex max-w-xl flex-col gap-4">
       <Volver href={`/semanas/${id}`} texto={`Entrega del ${formatearFecha(semana.valor.fecha_entrega)}`} />
-      <h1 className="text-2xl font-semibold">Nueva cesta</h1>
+      <h1 className="text-3xl font-bold">Nueva cesta</h1>
       <p className="text-sm text-stone-600">
         Con la lista base y el número de personas se propone qué lleva la cesta. Lo que choque con
         las exclusiones se quita, y después puedes cambiar lo que quieras.
       </p>
       {hayReparto && (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           Esta semana ya tiene un reparto propuesto. Si cambias los alimentos de las cestas, se descarta y habrá que
           volver a proponerlo.
         </p>
       )}
-      <section className="rounded-xl border border-stone-200 bg-white p-4">
+      <section className="rounded-xl border border-stone-300 bg-white p-4 shadow-sm">
         <FormularioCesta
           accion={crearCestaAccion.bind(null, id)}
           inicial={{
