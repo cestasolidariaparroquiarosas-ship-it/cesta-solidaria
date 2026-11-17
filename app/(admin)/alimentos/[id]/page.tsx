@@ -6,6 +6,7 @@ import { listarEtiquetas, obtenerAlimento } from "@/lib/servicios/catalogo";
 import { eliminarAlimentoAccion, guardarAlimentoAccion } from "../acciones";
 import { FormularioAlimento, FormularioEliminar } from "../formularios";
 import { Aviso, Volver } from "../../_ui/aviso";
+import { Tarjeta } from "../../_ui/tarjeta";
 
 export const metadata: Metadata = { title: "Alimento · Cesta solidaria" };
 
@@ -28,10 +29,10 @@ export default async function PaginaAlimento({ params, searchParams }: PageProps
   return (
     <div className="flex max-w-xl flex-col gap-4">
       <Volver href="/alimentos" texto="Alimentos" />
-      <h1 className="break-words text-2xl font-semibold">{a.nombre}</h1>
+      <h1 className="break-words text-3xl font-bold">{a.nombre}</h1>
       <Aviso clave={aviso} textos={AVISOS} />
 
-      <section className="rounded-xl border border-stone-200 bg-white p-4">
+      <section className="rounded-xl border border-stone-300 bg-white p-4 shadow-sm">
         {/* key: tras guardar, el formulario se vuelve a montar con los datos nuevos. */}
         <FormularioAlimento
           key={`${a.nombre}|${a.unidad}|${a.precio_aprox}|${a.activo}|${a.etiquetas.join(",")}`}
@@ -42,8 +43,7 @@ export default async function PaginaAlimento({ params, searchParams }: PageProps
         />
       </section>
 
-      <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-lg font-semibold">Eliminar</h2>
+      <Tarjeta titulo="Eliminar">
         <p className="text-sm text-stone-600">
           Solo se puede eliminar si no está en ninguna lista base ni en ninguna cesta. Si ya se ha
           usado, desactívalo: dejará de proponerse y el histórico se conserva.
@@ -52,7 +52,7 @@ export default async function PaginaAlimento({ params, searchParams }: PageProps
           accion={eliminarAlimentoAccion.bind(null, a.id)}
           texto="Quiero eliminar este alimento del catálogo."
         />
-      </section>
+      </Tarjeta>
     </div>
   );
 }

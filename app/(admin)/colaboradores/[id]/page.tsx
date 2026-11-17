@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requerirAdmin } from "@/lib/auth";
@@ -15,6 +14,7 @@ import {
 } from "../acciones";
 import { BotonAccion, FormularioColaborador, FormularioEliminar, FormularioPausa } from "../formularios";
 import { EtiquetaEstado } from "../etiqueta-estado";
+import { Tarjeta } from "../../_ui/tarjeta";
 
 export const metadata: Metadata = { title: "Colaborador · Cesta solidaria" };
 
@@ -24,15 +24,6 @@ const AVISOS: Record<string, string> = {
   activo: "Colaborador activo.",
   baja: "Colaborador dado de baja. No se le asignará nada ni recibirá más correos.",
 };
-
-function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-      <h2 className="text-lg font-semibold">{titulo}</h2>
-      {children}
-    </section>
-  );
-}
 
 export default async function PaginaColaborador({ params, searchParams }: PageProps<"/colaboradores/[id]">) {
   await requerirAdmin();
@@ -49,11 +40,11 @@ export default async function PaginaColaborador({ params, searchParams }: PagePr
 
   return (
     <div className="flex max-w-xl flex-col gap-4">
-      <Link href="/colaboradores" className="text-sm text-emerald-800 hover:underline">
+      <Link href="/colaboradores" className="text-sm font-medium text-emerald-800 hover:underline">
         ← Colaboradores
       </Link>
       <div className="flex flex-col gap-1">
-        <h1 className="break-words text-2xl font-semibold">{c.nombre}</h1>
+        <h1 className="break-words text-3xl font-bold">{c.nombre}</h1>
         <div>
           <EtiquetaEstado colaborador={c} />
         </div>
@@ -65,12 +56,12 @@ export default async function PaginaColaborador({ params, searchParams }: PagePr
       </div>
 
       {avisoTexto && (
-        <p role="status" className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        <p role="status" className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-950">
           {avisoTexto}
         </p>
       )}
 
-      <Seccion titulo="Datos">
+      <Tarjeta titulo="Datos">
         {/* key: al guardar, el formulario se vuelve a montar con los datos nuevos. */}
         <FormularioColaborador
           key={`${c.nombre}|${c.email}|${c.notas ?? ""}|${c.fecha_consentimiento ?? ""}`}
@@ -79,9 +70,9 @@ export default async function PaginaColaborador({ params, searchParams }: PagePr
           pedirConsentimiento={!c.fecha_consentimiento}
           textoBoton="Guardar cambios"
         />
-      </Seccion>
+      </Tarjeta>
 
-      <Seccion titulo="Estado">
+      <Tarjeta titulo="Estado">
         {c.estado === "activo" && (
           <>
             <p className="text-sm text-stone-600">
@@ -118,15 +109,15 @@ export default async function PaginaColaborador({ params, searchParams }: PagePr
             <BotonAccion accion={darDeBajaAccion.bind(null, c.id)} texto="Dar de baja" />
           </div>
         )}
-      </Seccion>
+      </Tarjeta>
 
-      <Seccion titulo="Eliminar definitivamente">
+      <Tarjeta titulo="Eliminar definitivamente">
         <p className="text-sm text-stone-600">
           Si te pide que borres sus datos, elimínalo: se borran su nombre y su correo. Las
           semanas en que participó se conservan, a nombre de «Colaborador eliminado».
         </p>
         <FormularioEliminar accion={eliminarAccion.bind(null, c.id)} />
-      </Seccion>
+      </Tarjeta>
     </div>
   );
 }

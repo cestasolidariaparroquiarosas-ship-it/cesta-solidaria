@@ -14,8 +14,8 @@ export default async function PaginaHistorico() {
   const cerradas = await listarCerradas(await crearClienteServidor());
 
   return (
-    <section className="flex max-w-3xl flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Histórico</h1>
+    <section className="flex flex-col gap-4">
+      <h1 className="text-3xl font-bold">Histórico</h1>
       <p className="text-sm text-stone-600">
         Las semanas cerradas, con quién llevó qué. A los 12 meses de cerrar una semana, los identificadores de las
         familias se cambian por «Cesta n.º 1», «Cesta n.º 2»…
@@ -29,14 +29,14 @@ export default async function PaginaHistorico() {
         <p className="text-stone-600">Todavía no hay semanas cerradas.</p>
       ) : (
         <ul
-          className="flex flex-col divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white"
+          className="flex flex-col divide-y divide-stone-200 overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm [&>li:nth-child(even)]:bg-stone-50"
           aria-label="Semanas cerradas"
         >
           {cerradas.valor.map((s) => {
             const r = recuento(s.asignaciones);
             return (
               <li key={s.id}>
-                <Link href={`/semanas/${s.id}`} className="flex flex-col gap-1 px-4 py-3 hover:bg-stone-50">
+                <Link href={`/semanas/${s.id}`} className="flex flex-col gap-1 px-4 py-3 hover:bg-emerald-50">
                   <span className="font-medium">Entrega del {formatearFecha(s.fecha_entrega)}</span>
                   <span className="text-sm text-stone-600">
                     {r.confirmadas} confirmada{r.confirmadas === 1 ? "" : "s"} · {r.entregadas} entregada

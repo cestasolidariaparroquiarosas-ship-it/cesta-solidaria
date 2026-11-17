@@ -12,10 +12,16 @@ import { formatearFecha } from "@/lib/fechas";
 import { itemsDeSemana, listarCandidatos, obtenerReparto } from "@/lib/servicios/reparto";
 import { obtenerSemana } from "@/lib/servicios/semanas";
 import { Aviso, Volver } from "../../../_ui/aviso";
+import { BarraProporcion } from "../../../_ui/barra";
+import { AVISO } from "../../../_ui/estilos";
+import { Etiqueta } from "../../../_ui/etiqueta";
+import { Tarjeta } from "../../../_ui/tarjeta";
 import { cambiarColaboradorAccion, moverAccion, proponerRepartoAccion } from "./acciones";
 import { FormularioCambiarColaborador, FormularioMover, FormularioProponer } from "./formularios";
 
 export const metadata: Metadata = { title: "Reparto · Cesta solidaria" };
+
+const RECUADRO = "rounded-xl border border-stone-300 bg-white px-4 py-3 shadow-sm";
 
 const AVISOS = {
   propuesto: "Reparto propuesto. Revísalo y cambia lo que haga falta.",
@@ -61,26 +67,38 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
   const nombres = asignaciones.map((a) => ({ id: a.id, nombre: nombreVisible(a.colaborador) }));
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <Volver href={`/semanas/${id}`} texto={`Entrega del ${formatearFecha(s.fecha_entrega)}`} />
-      <h1 className="text-2xl font-semibold">Reparto</h1>
+      <h1 className="text-3xl font-bold">Reparto</h1>
       <Aviso clave={aviso} textos={AVISOS} />
 
-      <section className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4 text-sm">
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-          <dt className="text-stone-600">Coste de las cestas</dt>
-          <dd>{formatearEuros(costeTotal)}</dd>
-          <dt className="text-stone-600">Precio base</dt>
-          <dd>{formatearEuros(s.precio_base)} por colaborador</dd>
-          <dt className="text-stone-600">Hacen falta</dt>
-          <dd>
-            {necesarios} colaborador{necesarios === 1 ? "" : "es"}
-          </dd>
-          <dt className="text-stone-600">Disponibles</dt>
-          <dd>{disponibles.length}</dd>
+      <section aria-label="Resumen del reparto" className="flex flex-col gap-3">
+        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className={RECUADRO}>
+            <dt className="text-sm text-stone-600">Coste de las cestas</dt>
+            <dd className="text-2xl font-bold">{formatearEuros(costeTotal)}</dd>
+          </div>
+          <div className={RECUADRO}>
+            <dt className="text-sm text-stone-600">Precio base</dt>
+            <dd className="text-2xl font-bold">
+              {formatearEuros(s.precio_base)}{" "}
+              <span className="text-sm font-medium text-stone-600">por colaborador</span>
+            </dd>
+          </div>
+          <div className={RECUADRO}>
+            <dt className="text-sm text-stone-600">Hacen falta</dt>
+            <dd className="text-2xl font-bold">
+              {necesarios}{" "}
+              <span className="text-sm font-medium text-stone-600">colaborador{necesarios === 1 ? "" : "es"}</span>
+            </dd>
+          </div>
+          <div className={RECUADRO}>
+            <dt className="text-sm text-stone-600">Disponibles</dt>
+            <dd className="text-2xl font-bold">{disponibles.length}</dd>
+          </div>
         </dl>
         {editable && faltan > 0 && costeTotal > 0 && (
-          <p role="alert" className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-950">
+          <p role="alert" className={`rounded-lg border px-3 py-2 ${AVISO.atencion}`}>
             Hacen falta {necesarios} colaboradores y solo hay {disponibles.length} disponibles: el gasto de cada uno
             superará el precio base.
           </p>
@@ -88,31 +106,33 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
       </section>
 
       {editable && items.valor.length === 0 ? (
-        <p className="text-stone-600">Añade alimentos a las cestas para poder repartirlos.</p>
+        <p className="text-stone-700">Añade alimentos a las cestas para poder repartirlos.</p>
       ) : (
         editable && (
-          <section className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4">
-            {asignaciones.length === 0 ? (
-              <p className="text-sm text-stone-600">
-                Se eligen los colaboradores que hacen falta, empezando por quienes nunca han participado o llevan más
-                tiempo sin hacerlo, y se reparten los alimentos para que todos gasten parecido.
-              </p>
-            ) : (
-              <p className="text-sm text-stone-600">
-                Si cambias alguna cesta, este reparto se descarta y hay que volver a proponerlo.
-              </p>
-            )}
-            <FormularioProponer
-              key={asignaciones.length}
-              accion={proponerRepartoAccion.bind(null, id)}
-              hayReparto={asignaciones.length > 0}
-            />
-          </section>
+          <div className="max-w-3xl">
+            <Tarjeta titulo={asignaciones.length === 0 ? "Proponer el reparto" : "Volver a empezar"}>
+              {asignaciones.length === 0 ? (
+                <p className="text-stone-700">
+                  Se eligen los colaboradores que hacen falta, empezando por quienes nunca han participado o llevan más
+                  tiempo sin hacerlo, y se reparten los alimentos para que todos gasten parecido.
+                </p>
+              ) : (
+                <p className="text-stone-700">
+                  Si cambias alguna cesta, este reparto se descarta y hay que volver a proponerlo.
+                </p>
+              )}
+              <FormularioProponer
+                key={asignaciones.length}
+                accion={proponerRepartoAccion.bind(null, id)}
+                hayReparto={asignaciones.length > 0}
+              />
+            </Tarjeta>
+          </div>
         )
       )}
 
       {asignaciones.length > 0 && (
-        <ul className="flex flex-col gap-3" aria-label="Colaboradores del reparto">
+        <ul className="grid items-start gap-4 lg:grid-cols-2" aria-label="Colaboradores del reparto">
           {asignaciones.map((a) => {
             const nombre = nombreVisible(a.colaborador);
             const gasto = costeCesta(a.items);
@@ -122,33 +142,55 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
             const noDisponible = editable && (!a.colaborador || !esCandidato(a.colaborador, s.fecha_entrega));
             const otros = nombres.filter((n) => n.id !== a.id);
             return (
-              <li key={a.id} className="rounded-xl border border-stone-200 bg-white" aria-label={nombre}>
-                <div className="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-stone-200 px-4 py-3">
-                  <h2 className="min-w-0 break-words font-semibold">{nombre}</h2>
+              <li
+                key={a.id}
+                className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm"
+                aria-label={nombre}
+              >
+                <div className="flex flex-col gap-2 border-b border-stone-300 bg-stone-100 px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    <h2 className="min-w-0 break-words text-lg font-bold">{nombre}</h2>
+                    {a.estado === "confirmada" && <Etiqueta tono="verde">Confirmada</Etiqueta>}
+                    {a.estado === "pendiente" && <Etiqueta tono="ambar">Esperando respuesta</Etiqueta>}
+                    <span className="ml-auto text-lg font-bold">{formatearEuros(gasto)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BarraProporcion
+                      alto="h-2"
+                      total={s.precio_base}
+                      texto={`${formatearEuros(gasto)} de ${formatearEuros(s.precio_base)}`}
+                      tramos={[{ valor: gasto, clase: excede ? "bg-amber-500" : "bg-emerald-600" }]}
+                    />
+                    <span className="text-sm whitespace-nowrap text-stone-700">de {formatearEuros(s.precio_base)}</span>
+                  </div>
+                  {excede && (
+                    <p className="text-sm font-semibold text-amber-900">
+                      Su gasto supera el precio base ({formatearEuros(s.precio_base)})
+                    </p>
+                  )}
                   {noDisponible && (
-                    <p role="alert" className="basis-full text-sm font-medium text-red-800">
+                    <p role="alert" className="text-sm font-semibold text-red-800">
                       Ya no está disponible para esta fecha: cámbialo por otro colaborador antes de enviar.
                     </p>
                   )}
-                  <p className={`text-sm ${excede ? "font-medium text-amber-800" : "text-stone-600"}`}>
-                    {formatearEuros(gasto)}
-                    {excede && ` · supera el precio base (${formatearEuros(s.precio_base)})`}
-                  </p>
                 </div>
-                <ul className="flex flex-col divide-y divide-stone-100">
+                <ul className="flex flex-col divide-y divide-stone-200 [&>li:nth-child(even)]:bg-stone-50">
                   {agruparPorAlimento(a.items).map((l) => {
                     const texto = `${l.nombre} (${l.unidad})`;
                     return (
                       <li key={`${l.alimento_id}|${l.unidad}`} className="px-4 py-2">
-                        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                          <span>
-                            {l.cantidad} × {texto}
+                        <div className="flex items-baseline justify-between gap-x-3">
+                          <span className="min-w-0">
+                            <strong>{l.cantidad} ×</strong> {l.nombre}{" "}
+                            <span className="text-sm text-stone-600">({l.unidad})</span>
                           </span>
-                          <span className="text-sm text-stone-600">{formatearEuros(l.gasto)}</span>
+                          <span className="shrink-0 tabular-nums">{formatearEuros(l.gasto)}</span>
                         </div>
                         {editable && otros.length > 0 && (
                           <details className="text-sm">
-                            <summary className="cursor-pointer text-stone-700 underline">Mover a otro colaborador</summary>
+                            <summary className="cursor-pointer py-1 text-emerald-800 underline">
+                              Mover a otro colaborador
+                            </summary>
                             <FormularioMover
                               key={`${a.id}|${l.cantidad}`}
                               accion={moverAccion.bind(null, id, a.id, {
@@ -167,8 +209,10 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
                   })}
                 </ul>
                 {editable && (
-                  <details className="border-t border-stone-200 px-4 py-2 text-sm">
-                    <summary className="cursor-pointer text-stone-700 underline">Cambiar por otro colaborador</summary>
+                  <details className="border-t border-stone-300 px-4 py-2 text-sm">
+                    <summary className="cursor-pointer py-1 text-emerald-800 underline">
+                      Cambiar por otro colaborador
+                    </summary>
                     <FormularioCambiarColaborador
                       accion={cambiarColaboradorAccion.bind(null, id, a.id)}
                       nombre={nombre}

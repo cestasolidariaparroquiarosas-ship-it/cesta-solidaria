@@ -16,8 +16,8 @@ export default async function PaginaNuevoAlimento() {
   return (
     <section className="flex max-w-xl flex-col gap-4">
       <Volver href="/alimentos" texto="Alimentos" />
-      <h1 className="text-2xl font-semibold">Nuevo alimento</h1>
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
+      <h1 className="text-3xl font-bold">Nuevo alimento</h1>
+      <div className="rounded-xl border border-stone-300 bg-white p-4 shadow-sm">
         <FormularioAlimento
           accion={guardarAlimentoAccion.bind(null, null)}
           etiquetas={etiquetas.valor}

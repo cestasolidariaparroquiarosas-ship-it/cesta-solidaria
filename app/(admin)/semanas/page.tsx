@@ -19,9 +19,9 @@ export default async function PaginaSemanas({ searchParams }: PageProps<"/semana
   const semanas = await listarSemanas(await crearClienteServidor());
 
   return (
-    <section className="flex max-w-3xl flex-col gap-4">
+    <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Semanas</h1>
+        <h1 className="text-3xl font-bold">Semanas</h1>
         <Link href="/semanas/nueva" className={BOTON_PRINCIPAL}>
           Nueva semana
         </Link>
@@ -39,12 +39,12 @@ export default async function PaginaSemanas({ searchParams }: PageProps<"/semana
       ) : semanas.valor.length === 0 ? (
         <p className="text-stone-600">Todavía no hay semanas.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
+        <ul className="flex flex-col divide-y divide-stone-200 overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm [&>li:nth-child(even)]:bg-stone-50">
           {semanas.valor.map((s) => (
             <li key={s.id}>
               <Link
                 href={`/semanas/${s.id}`}
-                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-stone-50"
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-emerald-50"
               >
                 <span className="flex flex-wrap items-center gap-2 font-medium">
                   Entrega del {formatearFecha(s.fecha_entrega)}

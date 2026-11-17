@@ -18,6 +18,7 @@ import {
 } from "../../../acciones";
 import { FilaAlimentoCesta, FormularioAnadirACesta, FormularioCesta, FormularioEliminar } from "../../../formularios";
 import { Aviso, Volver } from "../../../../_ui/aviso";
+import { Tarjeta } from "../../../../_ui/tarjeta";
 
 export const metadata: Metadata = { title: "Cesta · Cesta solidaria" };
 
@@ -89,7 +90,7 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
     <div className="flex max-w-3xl flex-col gap-4">
       <Volver href={`/semanas/${id}`} texto={`Entrega del ${formatearFecha(c.semana.fecha_entrega)}`} />
       <div className="flex flex-col gap-1">
-        <h1 className="break-words text-2xl font-semibold">{c.identificador_receptor}</h1>
+        <h1 className="break-words text-3xl font-bold">{c.identificador_receptor}</h1>
         <p className="text-sm text-stone-600">
           {c.adultos} adulto{c.adultos === 1 ? "" : "s"} y {c.ninos} niño{c.ninos === 1 ? "" : "s"}
           {sin && ` · ${sin}`}
@@ -98,7 +99,7 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
       </div>
       <Aviso clave={aviso} textos={AVISOS} />
       {editable && hayReparto && (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           Esta semana ya tiene un reparto propuesto. Si cambias los alimentos de las cestas, se descarta y habrá que
           volver a proponerlo.
         </p>
@@ -110,7 +111,7 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
       )}
 
       {choques.size > 0 && (
-        <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+        <div role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
           <p className="font-medium">
             {choques.size === 1 ? "Un alimento choca" : `${choques.size} alimentos chocan`} con las exclusiones de esta
             cesta: el catálogo ha cambiado después de prepararla.
@@ -120,7 +121,7 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
       )}
 
       {(quitados.length > 0 || desactivados.length > 0) && (
-        <div className="flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+        <div className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           {quitados.length > 0 && (
             <div>
               <p className="font-medium">No entran por las exclusiones (añade sustitutos si quieres):</p>
@@ -148,8 +149,7 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
         </div>
       )}
 
-      <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-lg font-semibold">Alimentos</h2>
+      <Tarjeta titulo="Alimentos">
         {c.items.length === 0 ? (
           <p className="text-sm text-stone-600">La cesta no tiene alimentos.</p>
         ) : (
@@ -178,12 +178,11 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
             />
           </>
         )}
-      </section>
+      </Tarjeta>
 
       {editable && (
         <>
-          <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-            <h2 className="text-lg font-semibold">Datos de la cesta</h2>
+          <Tarjeta titulo="Datos de la cesta">
             <p className="text-sm text-stone-600">
               Si añades una exclusión, se quitan los alimentos que choquen con ella.
             </p>
@@ -202,16 +201,15 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
               textoBoton="Guardar datos"
               conRecalcular
             />
-          </section>
+          </Tarjeta>
 
-          <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-            <h2 className="text-lg font-semibold">Eliminar</h2>
+          <Tarjeta titulo="Eliminar">
             <FormularioEliminar
               accion={eliminarCestaAccion.bind(null, id, c.id)}
               texto="Quiero eliminar esta cesta."
               boton="Eliminar cesta"
             />
-          </section>
+          </Tarjeta>
         </>
       )}
     </div>

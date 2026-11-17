@@ -1,10 +1,11 @@
 import { formatearFecha } from "@/lib/fechas";
 import { NOMBRE_ESTADO, type Colaborador } from "@/lib/dominio/colaboradores";
+import { Etiqueta, type Tono } from "../_ui/etiqueta";
 
-const COLOR_ESTADO: Record<Colaborador["estado"], string> = {
-  activo: "bg-emerald-100 text-emerald-900",
-  pausado: "bg-amber-100 text-amber-900",
-  baja: "bg-stone-200 text-stone-700",
+const TONO: Record<Colaborador["estado"], Tono> = {
+  activo: "verde",
+  pausado: "ambar",
+  baja: "gris",
 };
 
 export function EtiquetaEstado({ colaborador }: { colaborador: Pick<Colaborador, "estado" | "pausado_hasta"> }) {
@@ -15,9 +16,5 @@ export function EtiquetaEstado({ colaborador }: { colaborador: Pick<Colaborador,
         ? `En pausa hasta el ${formatearFecha(pausado_hasta)}`
         : "En pausa (sin fecha de vuelta)"
       : NOMBRE_ESTADO[estado];
-  return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${COLOR_ESTADO[estado]}`}>
-      {texto}
-    </span>
-  );
+  return <Etiqueta tono={TONO[estado]}>{texto}</Etiqueta>;
 }

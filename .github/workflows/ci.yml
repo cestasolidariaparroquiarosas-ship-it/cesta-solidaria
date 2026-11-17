@@ -71,7 +71,30 @@ jobs:
           npm run test:datos-de-prueba
           npm run datos-de-prueba -- cargar
           psql "$DB_URL" --variable ON_ERROR_STOP=1 --file scripts/comprobar-rls.sql
+          # Iteración 0003: capturas de las pantallas con estos datos, para revisar el aspecto
+          # de un PR. Al desplegar (deploy.yml reutiliza este archivo) no hacen falta.
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            CAPTURAS=1 npx playwright test --grep @capturas
+          fi
           npm run datos-de-prueba -- borrar
+
+      # La sesión de Claude no puede descargar artefactos (su red no llega al almacén de
+      # GitHub), pero sí leer el registro: las capturas van también aquí, en base64.
+      - name: Capturas en el registro
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          shopt -s nullglob
+          for f in capturas/*/*.jpg; do
+            base64 -w 1000 "$f" | sed "s|^|CAPTURA $f |"
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'pull_request'
+        with:
+          name: capturas
+          path: capturas/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - uses: actions/upload-artifact@v4
         if: failure()

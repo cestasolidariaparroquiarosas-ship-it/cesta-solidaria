@@ -18,7 +18,7 @@ export default async function PaginaBaja({ params, searchParams }: PageProps<"/b
   if (!colaborador) {
     return (
       <>
-        <h1 className="text-xl font-semibold">Este enlace no es válido</h1>
+        <h1 className="text-2xl font-bold">Este enlace no es válido</h1>
         <p className="text-stone-700">
           Puede que esté incompleto, o que tus datos ya se hayan borrado. Si quieres darte de baja, contesta a
           cualquiera de nuestros correos.
@@ -31,7 +31,7 @@ export default async function PaginaBaja({ params, searchParams }: PageProps<"/b
     return (
       <>
         <div role="status">
-          <h1 className="text-xl font-semibold">
+          <h1 className="text-2xl font-bold">
             {hecho ? `Te hemos dado de baja, ${colaborador.nombre}` : "Ya estás de baja"}
           </h1>
         </div>
@@ -46,7 +46,7 @@ export default async function PaginaBaja({ params, searchParams }: PageProps<"/b
 
   return (
     <>
-      <h1 className="text-xl font-semibold">Hola, {colaborador.nombre}</h1>
+      <h1 className="text-2xl font-bold">Hola, {colaborador.nombre}</h1>
       <p>¿Quieres dejar de recibir correos de la cesta solidaria?</p>
       <p className="text-sm text-stone-600">
         Si tenías alimentos pendientes de confirmar, se los pediremos a otra persona. Lo que ya confirmaste se mantiene;

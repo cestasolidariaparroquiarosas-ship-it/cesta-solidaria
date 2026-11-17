@@ -69,3 +69,23 @@ export function validarSemana(
     datos: { fecha_entrega: fecha, precio_base: precio!, plazo_confirmacion: plazo!.toISOString() },
   };
 }
+
+export type PasoSemana = { clave: "datos" | "cestas" | "reparto" | "envio"; hecho: boolean; actual: boolean };
+
+/**
+ * Pasos de la semana (spec 0003, P1). Datos siempre está hecho; Cestas, si hay alguna;
+ * Reparto, si hay asignaciones vivas; Envío, si la semana está cerrada. El actual es el
+ * primero sin hacer, salvo con la semana enviada, que es Envío. Cerrada: ninguno.
+ */
+export function pasosSemana(d: { estado: EstadoSemana; cestas: number; enReparto: number }): PasoSemana[] {
+  const hechos = {
+    datos: true,
+    cestas: d.cestas > 0,
+    reparto: d.enReparto > 0,
+    envio: d.estado === "cerrada",
+  };
+  const claves = ["datos", "cestas", "reparto", "envio"] as const;
+  const actual =
+    d.estado === "cerrada" ? null : d.estado === "enviada" ? "envio" : (claves.find((c) => !hechos[c]) ?? null);
+  return claves.map((clave) => ({ clave, hecho: hechos[clave], actual: clave === actual }));
+}

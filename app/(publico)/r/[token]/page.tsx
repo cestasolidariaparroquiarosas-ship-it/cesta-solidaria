@@ -25,7 +25,7 @@ export default async function PaginaRespuesta({ params, searchParams }: PageProp
   if (!vista) {
     return (
       <>
-        <h1 className="text-xl font-semibold">Este enlace no es válido</h1>
+        <h1 className="text-2xl font-bold">Este enlace no es válido</h1>
         <p className="text-stone-700">
           Puede que esté incompleto. Abre el enlace directamente desde el correo o contesta al correo para avisarnos.
         </p>
@@ -47,7 +47,7 @@ export default async function PaginaRespuesta({ params, searchParams }: PageProp
     </>
   );
   const baja = (
-    <p className="border-t border-stone-200 pt-3 text-xs text-stone-500">
+    <p className="border-t border-stone-200 pt-3 text-xs text-stone-600">
       ¿No quieres recibir más correos de la cesta?{" "}
       <Link href={`/baja/${token}`} className="underline">
         Darme de baja
@@ -60,7 +60,7 @@ export default async function PaginaRespuesta({ params, searchParams }: PageProp
       return (
         <>
           <div role="status">
-            <h1 className="text-xl font-semibold">
+            <h1 className="text-2xl font-bold">
               {hecho === "si" ? `¡Gracias, ${vista.nombre}!` : "Ya lo confirmaste"}
             </h1>
           </div>
@@ -73,7 +73,7 @@ export default async function PaginaRespuesta({ params, searchParams }: PageProp
       return (
         <>
           <div role="status">
-            <h1 className="text-xl font-semibold">
+            <h1 className="text-2xl font-bold">
               {hecho === "no" ? `Gracias por avisar, ${vista.nombre}` : "Ya respondiste"}
             </h1>
           </div>
@@ -84,7 +84,7 @@ export default async function PaginaRespuesta({ params, searchParams }: PageProp
     case "vencida":
       return (
         <>
-          <h1 className="text-xl font-semibold">El plazo para responder ha terminado</h1>
+          <h1 className="text-2xl font-bold">El plazo para responder ha terminado</h1>
           <p>
             {vista.plazo ? `Terminó el ${formatearFechaHora(vista.plazo)}. ` : ""}Si aún puedes ayudar, contesta al
             correo y te diremos si hace falta.
@@ -95,7 +95,7 @@ export default async function PaginaRespuesta({ params, searchParams }: PageProp
     case "no_disponible":
       return (
         <>
-          <h1 className="text-xl font-semibold">Esta petición ya no está activa</h1>
+          <h1 className="text-2xl font-bold">Esta petición ya no está activa</h1>
           <p>No hace falta que hagas nada. Si tienes alguna duda, contesta al correo.</p>
         </>
       );
@@ -120,7 +120,7 @@ export default async function PaginaRespuesta({ params, searchParams }: PageProp
 
   return (
     <>
-      <h1 className="text-xl font-semibold">Hola, {vista.nombre}</h1>
+      <h1 className="text-2xl font-bold">Hola, {vista.nombre}</h1>
       <p>Para la cesta solidaria del {fecha} te pedimos que lleves:</p>
       {lista}
       {vista.plazo && (
@@ -129,7 +129,7 @@ export default async function PaginaRespuesta({ params, searchParams }: PageProp
         </p>
       )}
       {eligio && (
-        <p className="rounded-md bg-stone-100 px-3 py-2 text-sm">
+        <p className="rounded-lg bg-stone-100 px-3 py-2 text-sm">
           Has elegido «{eligio === "si" ? "Puedo llevarlo" : "No puedo esta vez"}». Pulsa el botón para confirmarlo.
         </p>
       )}

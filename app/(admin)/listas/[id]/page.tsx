@@ -13,6 +13,8 @@ import {
 } from "../acciones";
 import { BotonLista, FilaItem, FormularioAnadir, FormularioEliminarLista, FormularioNombreLista } from "../formularios";
 import { Aviso, Volver } from "../../_ui/aviso";
+import { Etiqueta } from "../../_ui/etiqueta";
+import { Tarjeta } from "../../_ui/tarjeta";
 
 export const metadata: Metadata = { title: "Lista base · Cesta solidaria" };
 
@@ -45,17 +47,14 @@ export default async function PaginaLista({ params, searchParams }: PageProps<"/
     <div className="flex max-w-3xl flex-col gap-4">
       <Volver href="/listas" texto="Listas base" />
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="break-words text-2xl font-semibold">{l.nombre}</h1>
+        <h1 className="break-words text-3xl font-bold">{l.nombre}</h1>
         {l.predeterminada && (
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900">
-            Predeterminada
-          </span>
+          <Etiqueta tono="verde">Predeterminada</Etiqueta>
         )}
       </div>
       <Aviso clave={aviso} textos={AVISOS} />
 
-      <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-lg font-semibold">Alimentos y cantidades al mes</h2>
+      <Tarjeta titulo="Alimentos y cantidades al mes">
         <p className="text-sm text-stone-600">
           La cesta de una familia lleva, de cada alimento, adultos × cantidad por adulto + niños ×
           cantidad por niño, redondeado hacia arriba. Se aceptan decimales: 0,5 por adulto son 2
@@ -81,10 +80,9 @@ export default async function PaginaLista({ params, searchParams }: PageProps<"/
           accion={anadirAlimentoAccion.bind(null, l.id)}
           alimentos={disponibles.map((a) => ({ id: a.id, nombre: a.nombre, unidad: a.unidad }))}
         />
-      </section>
+      </Tarjeta>
 
-      <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-lg font-semibold">Ajustes de la lista</h2>
+      <Tarjeta titulo="Ajustes de la lista">
         <FormularioNombreLista
           key={l.nombre}
           accion={renombrarListaAccion.bind(null, l.id)}
@@ -95,15 +93,14 @@ export default async function PaginaLista({ params, searchParams }: PageProps<"/
         {!l.predeterminada && (
           <BotonLista accion={marcarPredeterminadaAccion.bind(null, l.id)} texto="Marcar como predeterminada" />
         )}
-      </section>
+      </Tarjeta>
 
-      <section className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-lg font-semibold">Eliminar</h2>
+      <Tarjeta titulo="Eliminar">
         <p className="text-sm text-stone-600">
           Las cestas que ya se prepararon con esta lista no cambian: conservan sus alimentos.
         </p>
         <FormularioEliminarLista accion={eliminarListaAccion.bind(null, l.id)} />
-      </section>
+      </Tarjeta>
     </div>
   );
 }

@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
+import { Franja } from "@/app/_comun/franja";
 import { FormularioLogin } from "./formulario";
 
 export const metadata: Metadata = { title: "Entrar · Cesta solidaria" };
 
 export default function PaginaLogin() {
   return (
-    <main className="flex flex-1 items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
-        <h1 className="mb-1 text-2xl font-semibold">Cesta solidaria</h1>
-        <p className="mb-6 text-sm text-stone-600">Acceso para administradores</p>
-        <FormularioLogin />
-      </div>
-    </main>
+    <>
+      <Franja />
+      <main className="flex flex-1 items-start justify-center p-4 sm:items-center">
+        <div className="w-full max-w-sm overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
+          <div className="border-b border-stone-300 bg-stone-100 px-6 py-4">
+            <h1 className="text-2xl font-bold">Cesta solidaria</h1>
+            <p className="text-stone-700">Acceso para administradores</p>
+          </div>
+          <div className="p-6">
+            <FormularioLogin />
+          </div>
+        </div>
+      </main>
+    </>
   );
 }

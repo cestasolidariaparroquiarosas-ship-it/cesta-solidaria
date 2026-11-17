@@ -17,8 +17,8 @@ export default async function PaginaNuevaSemana() {
   return (
     <div className="flex max-w-xl flex-col gap-4">
       <Volver href="/semanas" texto="Semanas" />
-      <h1 className="text-2xl font-semibold">Nueva semana</h1>
-      <section className="rounded-xl border border-stone-200 bg-white p-4">
+      <h1 className="text-3xl font-bold">Nueva semana</h1>
+      <section className="rounded-xl border border-stone-300 bg-white p-4 shadow-sm">
         <FormularioSemana
           accion={guardarSemanaAccion.bind(null, null)}
           hoy={hoyEnMadrid()}
