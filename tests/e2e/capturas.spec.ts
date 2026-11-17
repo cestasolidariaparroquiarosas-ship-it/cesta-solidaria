@@ -27,9 +27,12 @@ test("capturas @capturas", async ({ page }, info) => {
   const capturar = async (nombre: string) => {
     await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
     n += 1;
+    // JPEG: pesan poco, y CI también las vuelca en el registro (ver ci.yml).
     await page.screenshot({
-      path: `capturas/${info.project.name}/${String(n).padStart(2, "0")}-${nombre}.png`,
+      path: `capturas/${info.project.name}/${String(n).padStart(2, "0")}-${nombre}.jpg`,
       fullPage: true,
+      type: "jpeg",
+      quality: 70,
     });
   };
 
