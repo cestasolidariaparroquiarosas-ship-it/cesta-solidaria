@@ -148,7 +148,7 @@ La cabecera y el contenido usan el mismo ancho máximo (`max-w-6xl`). Las fichas
 
 - **Unitarias:** P1 y P2.
 - **E2E:** CA-0301, CA-0302, CA-0303, CA-0305 y CA-0306.
-- **CA-0304:** con `@axe-core/playwright`, nueva dependencia de desarrollo. La app no lleva dependencias nuevas.
+- **CA-0304:** con `@axe-core/playwright`, nueva dependencia de desarrollo. La app no lleva dependencias nuevas. Además de las pantallas del CA, revisa el reparto en preparación.
 
 ## 8. Ajustes durante la implementación (2026-11-17)
 
@@ -156,3 +156,6 @@ La cabecera y el contenido usan el mismo ancho máximo (`max-w-6xl`). Las fichas
 - **Encabezados de columna** solo en Colaboradores y Alimentos (§3).
 - **P2:** grupo «Sin enviar» por si quedara alguna propuesta, y títulos de grupo distintos de las etiquetas (§4).
 - **Aviso de exceso en el reparto:** ahora es una línea propia, «Su gasto supera el precio base (20,00 €)», debajo de la barra. Conserva el texto que buscan las pruebas.
+- **Etiqueta de estado en el reparto:** con la semana enviada, cada tarjeta del reparto lleva «Confirmada» o «Esperando respuesta», como en el seguimiento. Así se ve en la misma pantalla quién ha contestado.
+- **Fichas:** las secciones de las fichas (colaborador, alimento, lista base y cesta) usan la pieza común `Tarjeta`.
+- **Capturas:** en lugar de usar los datos de las e2e, se toman en CI con los datos de prueba (iteración 0002) recién cargados, que se parecen a lo que verán los administradores. Van en el artefacto `capturas` del PR y, en base64, en el registro de CI, porque la sesión de Claude no puede descargar artefactos. Solo en los PR, no al desplegar.

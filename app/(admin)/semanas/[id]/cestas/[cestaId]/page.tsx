@@ -18,6 +18,7 @@ import {
 } from "../../../acciones";
 import { FilaAlimentoCesta, FormularioAnadirACesta, FormularioCesta, FormularioEliminar } from "../../../formularios";
 import { Aviso, Volver } from "../../../../_ui/aviso";
+import { Tarjeta } from "../../../../_ui/tarjeta";
 
 export const metadata: Metadata = { title: "Cesta · Cesta solidaria" };
 
@@ -148,76 +149,67 @@ export default async function PaginaCesta({ params, searchParams }: PageProps<"/
         </div>
       )}
 
-      <section className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
-        <h2 className="border-b border-stone-300 bg-stone-100 px-4 py-3 text-lg font-bold">Alimentos</h2>
-        <div className="flex flex-col gap-3 p-4">
-          {c.items.length === 0 ? (
-            <p className="text-sm text-stone-600">La cesta no tiene alimentos.</p>
-          ) : (
-            <ul className="-mx-4 flex flex-col divide-y divide-stone-200 border-y border-stone-200">
-              {c.items.map((item) => (
-                <FilaAlimentoCesta
-                  key={`${item.id}|${item.cantidad}`}
-                  item={{ ...item, choque: choques.get(item.id) }}
-                  guardar={editable ? cambiarCantidadAccion.bind(null, id, c.id, item.id) : undefined}
-                  quitar={editable ? quitarDeCestaAccion.bind(null, id, c.id, item.id) : undefined}
-                />
-              ))}
-            </ul>
-          )}
-          <p className="text-sm">
-            <span className="font-medium">Coste de la cesta:</span> {formatearEuros(costeCesta(c.items))}. Los precios son
-            los del momento en que se añadió cada alimento.
-          </p>
-          {editable && (
-            <>
-              <h3 className="mt-2 font-medium">Añadir un alimento</h3>
-              <FormularioAnadirACesta
-                key={c.items.length}
-                accion={anadirACestaAccion.bind(null, id, c.id)}
-                alimentos={disponibles}
+      <Tarjeta titulo="Alimentos">
+        {c.items.length === 0 ? (
+          <p className="text-sm text-stone-600">La cesta no tiene alimentos.</p>
+        ) : (
+          <ul className="-mx-4 flex flex-col divide-y divide-stone-200 border-y border-stone-200">
+            {c.items.map((item) => (
+              <FilaAlimentoCesta
+                key={`${item.id}|${item.cantidad}`}
+                item={{ ...item, choque: choques.get(item.id) }}
+                guardar={editable ? cambiarCantidadAccion.bind(null, id, c.id, item.id) : undefined}
+                quitar={editable ? quitarDeCestaAccion.bind(null, id, c.id, item.id) : undefined}
               />
-            </>
-          )}
-        </div>
-      </section>
+            ))}
+          </ul>
+        )}
+        <p className="text-sm">
+          <span className="font-medium">Coste de la cesta:</span> {formatearEuros(costeCesta(c.items))}. Los precios son
+          los del momento en que se añadió cada alimento.
+        </p>
+        {editable && (
+          <>
+            <h3 className="mt-2 font-medium">Añadir un alimento</h3>
+            <FormularioAnadirACesta
+              key={c.items.length}
+              accion={anadirACestaAccion.bind(null, id, c.id)}
+              alimentos={disponibles}
+            />
+          </>
+        )}
+      </Tarjeta>
 
       {editable && (
         <>
-          <section className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
-            <h2 className="border-b border-stone-300 bg-stone-100 px-4 py-3 text-lg font-bold">Datos de la cesta</h2>
-            <div className="flex flex-col gap-3 p-4">
-              <p className="text-sm text-stone-600">
-                Si añades una exclusión, se quitan los alimentos que choquen con ella.
-              </p>
-              <FormularioCesta
-                key={`${c.identificador_receptor}|${c.adultos}|${c.ninos}|${c.lista_base_id}|${c.exclusiones.join(",")}|${c.items.length}`}
-                accion={editarCestaAccion.bind(null, id, c.id)}
-                inicial={{
-                  identificador_receptor: c.identificador_receptor,
-                  adultos: String(c.adultos),
-                  ninos: String(c.ninos),
-                  lista_base_id: c.lista_base_id ?? "",
-                  exclusiones: c.exclusiones,
-                }}
-                listas={listas.valor}
-                etiquetas={etiquetas.valor}
-                textoBoton="Guardar datos"
-                conRecalcular
-              />
-            </div>
-          </section>
+          <Tarjeta titulo="Datos de la cesta">
+            <p className="text-sm text-stone-600">
+              Si añades una exclusión, se quitan los alimentos que choquen con ella.
+            </p>
+            <FormularioCesta
+              key={`${c.identificador_receptor}|${c.adultos}|${c.ninos}|${c.lista_base_id}|${c.exclusiones.join(",")}|${c.items.length}`}
+              accion={editarCestaAccion.bind(null, id, c.id)}
+              inicial={{
+                identificador_receptor: c.identificador_receptor,
+                adultos: String(c.adultos),
+                ninos: String(c.ninos),
+                lista_base_id: c.lista_base_id ?? "",
+                exclusiones: c.exclusiones,
+              }}
+              listas={listas.valor}
+              etiquetas={etiquetas.valor}
+              textoBoton="Guardar datos"
+              conRecalcular
+            />
+          </Tarjeta>
 
-          <section className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
-            <h2 className="border-b border-stone-300 bg-stone-100 px-4 py-3 text-lg font-bold">Eliminar</h2>
-            <div className="flex flex-col gap-3 p-4">
-              <FormularioEliminar
-                accion={eliminarCestaAccion.bind(null, id, c.id)}
-                texto="Quiero eliminar esta cesta."
-                boton="Eliminar cesta"
-              />
-            </div>
-          </section>
+          <Tarjeta titulo="Eliminar">
+            <FormularioEliminar
+              accion={eliminarCestaAccion.bind(null, id, c.id)}
+              texto="Quiero eliminar esta cesta."
+              boton="Eliminar cesta"
+            />
+          </Tarjeta>
         </>
       )}
     </div>

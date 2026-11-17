@@ -104,22 +104,22 @@ export default async function Inicio() {
                   ) : (
                     <>
                       <dl className="grid grid-cols-3 gap-2 sm:gap-3">
-                        <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-3">
-                          <dt className="flex items-center gap-1.5 text-sm font-semibold text-emerald-900">
+                        <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-2 py-2 text-center sm:px-4 sm:py-3 sm:text-left">
+                          <dt className="flex items-center justify-center gap-1.5 text-[13px] font-semibold sm:justify-start sm:text-sm text-emerald-900">
                             <IconoCheck className="hidden size-4 sm:block" />
                             Confirmadas
                           </dt>
                           <dd className="text-3xl font-bold text-emerald-900 sm:text-4xl">{r.confirmadas}</dd>
                         </div>
-                        <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 sm:px-4 sm:py-3">
-                          <dt className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+                        <div className="rounded-xl border border-amber-300 bg-amber-50 px-2 py-2 text-center sm:px-4 sm:py-3 sm:text-left">
+                          <dt className="flex items-center justify-center gap-1.5 text-[13px] font-semibold sm:justify-start sm:text-sm text-amber-900">
                             <IconoReloj className="hidden size-4 sm:block" />
                             Esperando
                           </dt>
                           <dd className="text-3xl font-bold text-amber-900 sm:text-4xl">{r.esperando}</dd>
                         </div>
-                        <div className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 sm:px-4 sm:py-3">
-                          <dt className="flex items-center gap-1.5 text-sm font-semibold text-rose-900">
+                        <div className="rounded-xl border border-rose-300 bg-rose-50 px-2 py-2 text-center sm:px-4 sm:py-3 sm:text-left">
+                          <dt className="flex items-center justify-center gap-1.5 text-[13px] font-semibold sm:justify-start sm:text-sm text-rose-900">
                             <IconoCruz className="hidden size-4 sm:block" />
                             No pueden
                           </dt>

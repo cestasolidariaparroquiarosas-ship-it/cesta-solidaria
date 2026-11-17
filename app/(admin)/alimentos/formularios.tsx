@@ -78,7 +78,7 @@ export function FormularioAlimento({
       </Campo>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">Contiene</legend>
-        <p className="text-xs text-stone-600">
+        <p className="text-sm text-stone-600">
           Marca lo que contiene. Al proponer o completar una cesta &quot;sin cerdo&quot;, no se podrán
           añadir alimentos marcados con &quot;cerdo&quot;.
         </p>
@@ -215,7 +215,7 @@ export function FilaEtiqueta({
           </form>
         )}
       </div>
-      <p className="text-xs text-stone-600">
+      <p className="text-sm text-stone-600">
         {alimentos === 0
           ? "Ningún alimento la lleva."
           : `La llevan ${alimentos} alimento${alimentos === 1 ? "" : "s"}: no se puede eliminar.`}

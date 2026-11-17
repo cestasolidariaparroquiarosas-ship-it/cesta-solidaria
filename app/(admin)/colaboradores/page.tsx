@@ -77,7 +77,7 @@ export default async function PaginaColaboradores({ searchParams }: PageProps<"/
             <span className="w-1/3">Estado</span>
             <span className="w-1/3 text-right">Última participación</span>
           </CabeceraColumnas>
-        <ul className={LISTA}>
+          <ul className={LISTA}>
             {resultado.valor.map((c) => (
               <li key={c.id}>
                 <Link
@@ -85,7 +85,7 @@ export default async function PaginaColaboradores({ searchParams }: PageProps<"/
                   className="flex flex-col gap-1 px-4 py-3 hover:bg-emerald-50 sm:flex-row sm:items-center sm:gap-4"
                 >
                   <span className="min-w-0 sm:w-1/3">
-                    <span className="block truncate font-medium">{c.nombre}</span>
+                    <span className="block truncate font-semibold">{c.nombre}</span>
                     <span className="block truncate text-sm text-stone-600">{c.email}</span>
                   </span>
                   <span className="sm:w-1/3">

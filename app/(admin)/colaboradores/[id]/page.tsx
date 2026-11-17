@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requerirAdmin } from "@/lib/auth";
@@ -15,6 +14,7 @@ import {
 } from "../acciones";
 import { BotonAccion, FormularioColaborador, FormularioEliminar, FormularioPausa } from "../formularios";
 import { EtiquetaEstado } from "../etiqueta-estado";
+import { Tarjeta } from "../../_ui/tarjeta";
 
 export const metadata: Metadata = { title: "Colaborador · Cesta solidaria" };
 
@@ -24,17 +24,6 @@ const AVISOS: Record<string, string> = {
   activo: "Colaborador activo.",
   baja: "Colaborador dado de baja. No se le asignará nada ni recibirá más correos.",
 };
-
-function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) {
-  return (
-    <section className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
-      <h2 className="border-b border-stone-300 bg-stone-100 px-4 py-3 text-lg font-bold">{titulo}</h2>
-      <div className="flex flex-col gap-3 p-4">
-        {children}
-      </div>
-    </section>
-  );
-}
 
 export default async function PaginaColaborador({ params, searchParams }: PageProps<"/colaboradores/[id]">) {
   await requerirAdmin();
@@ -72,7 +61,7 @@ export default async function PaginaColaborador({ params, searchParams }: PagePr
         </p>
       )}
 
-      <Seccion titulo="Datos">
+      <Tarjeta titulo="Datos">
         {/* key: al guardar, el formulario se vuelve a montar con los datos nuevos. */}
         <FormularioColaborador
           key={`${c.nombre}|${c.email}|${c.notas ?? ""}|${c.fecha_consentimiento ?? ""}`}
@@ -81,9 +70,9 @@ export default async function PaginaColaborador({ params, searchParams }: PagePr
           pedirConsentimiento={!c.fecha_consentimiento}
           textoBoton="Guardar cambios"
         />
-      </Seccion>
+      </Tarjeta>
 
-      <Seccion titulo="Estado">
+      <Tarjeta titulo="Estado">
         {c.estado === "activo" && (
           <>
             <p className="text-sm text-stone-600">
@@ -120,15 +109,15 @@ export default async function PaginaColaborador({ params, searchParams }: PagePr
             <BotonAccion accion={darDeBajaAccion.bind(null, c.id)} texto="Dar de baja" />
           </div>
         )}
-      </Seccion>
+      </Tarjeta>
 
-      <Seccion titulo="Eliminar definitivamente">
+      <Tarjeta titulo="Eliminar definitivamente">
         <p className="text-sm text-stone-600">
           Si te pide que borres sus datos, elimínalo: se borran su nombre y su correo. Las
           semanas en que participó se conservan, a nombre de «Colaborador eliminado».
         </p>
         <FormularioEliminar accion={eliminarAccion.bind(null, c.id)} />
-      </Seccion>
+      </Tarjeta>
     </div>
   );
 }

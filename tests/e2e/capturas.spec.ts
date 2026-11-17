@@ -11,6 +11,7 @@ test.skip(!process.env.CAPTURAS || Boolean(process.env.BASE_URL), "Solo en CI, c
 config({ path: ".env.local", quiet: true });
 
 test("capturas @capturas", async ({ page }, info) => {
+  test.setTimeout(120_000);
   const s = clienteServicio();
   const { data: semanas } = await s.from("semanas").select("id, estado, fecha_entrega").order("fecha_entrega");
   const enviada = semanas!.find((x) => x.estado === "enviada")!;

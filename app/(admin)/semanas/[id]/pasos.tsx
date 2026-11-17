@@ -43,7 +43,7 @@ export function PasosSemana({ pasos, resumen }: { pasos: PasoSemana[]; resumen: 
                 {NOMBRE[p.clave]}
                 {p.hecho && <span className="sr-only"> (hecho)</span>}
               </span>
-              <span className={`block text-sm ${p.actual ? "text-emerald-900" : "text-stone-600"}`}>
+              <span className={`text-sm ${p.actual ? "block text-emerald-900" : "hidden text-stone-600 sm:block"}`}>
                 {resumen[p.clave]}
               </span>
             </span>

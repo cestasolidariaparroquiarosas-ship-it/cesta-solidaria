@@ -23,6 +23,7 @@ const sem: Record<"sinCestas" | "conCestas" | "conReparto" | "enviada", string> 
   enviada: "",
 };
 const tokens: Record<string, string> = {};
+let lista = "";
 
 function comprobar<T>({ data, error }: { data: T; error: { message: string } | null }): NonNullable<T> {
   if (error || data === null || data === undefined) throw new Error(`No se han podido preparar los datos: ${error?.message}`);
@@ -31,7 +32,7 @@ function comprobar<T>({ data, error }: { data: T; error: { message: string } | n
 
 const fechaLejana = () => sumarDias("2400-01-01", Math.floor(Math.random() * 50_000));
 
-async function nuevaSemana(estado: "borrador" | "enviada" = "borrador") {
+async function nuevaSemana() {
   const s = clienteServicio();
   const plazo = new Date(Date.now() + 3_600_000).toISOString();
   const semana = comprobar(
@@ -42,7 +43,7 @@ async function nuevaSemana(estado: "borrador" | "enviada" = "borrador") {
       .single(),
   );
   semanasCreadas.push(semana.id);
-  return { id: semana.id, plazo, estado };
+  return { id: semana.id, plazo };
 }
 
 /** Cesta con 3 arroces y 3 aceites (25,20 €). Devuelve el id de cada línea. */
@@ -90,6 +91,11 @@ test.beforeAll(async ({}, info) => {
         .single(),
     ).id;
   }
+
+  // Una lista base, para comprobar el menú en su ficha (CA-0301).
+  lista = comprobar(
+    await s.from("listas_base").insert({ nombre: `${MARCA}-${sufijo} Lista` }).select("id").single(),
+  ).id;
 
   // P1: sin cestas; con cestas y sin reparto; con reparto en preparación.
   sem.sinCestas = (await nuevaSemana()).id;
@@ -149,6 +155,7 @@ test.afterAll(async () => {
   if (semanasCreadas.length) await s.from("semanas").delete().in("id", semanasCreadas);
   await s.from("colaboradores").delete().like("email", `${MARCA}%`);
   await s.from("alimentos").delete().like("nombre", `${MARCA}%`);
+  await s.from("listas_base").delete().like("nombre", `${MARCA}%`);
 });
 
 async function sinDesbordar(page: Page) {
@@ -171,6 +178,7 @@ test("CA-0301: el menú marca la sección actual, también en sus subpáginas", 
     ["/alimentos", "Alimentos"],
     ["/alimentos/etiquetas", "Alimentos"],
     ["/listas", "Listas base"],
+    [`/listas/${lista}`, "Listas base"],
   ];
   for (const [ruta, seccion] of casos) {
     await page.goto(ruta);
@@ -229,6 +237,8 @@ test.describe("contraste", () => {
   test.skip(({ viewport }) => (viewport?.width ?? 1280) < 768, "Solo en escritorio: el color no cambia con el ancho");
 
   test("CA-0304: sin fallos de contraste en las pantallas principales", async ({ page }) => {
+    // 14 pantallas con su análisis de axe: más que el tiempo por defecto.
+    test.setTimeout(120_000);
     const revisar = async (ruta: string) => {
       await page.goto(ruta);
       await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
@@ -247,6 +257,7 @@ test.describe("contraste", () => {
       "/",
       "/semanas",
       `/semanas/${sem.conReparto}`,
+      `/semanas/${sem.conReparto}/reparto`,
       `/semanas/${sem.enviada}`,
       `/semanas/${sem.enviada}/reparto`,
       "/colaboradores",

@@ -150,11 +150,8 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
                 <div className="flex flex-col gap-2 border-b border-stone-300 bg-stone-100 px-4 py-3">
                   <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                     <h2 className="min-w-0 break-words text-lg font-bold">{nombre}</h2>
-                    {!editable && (
-                      <Etiqueta tono={a.estado === "confirmada" ? "verde" : "ambar"}>
-                        {a.estado === "confirmada" ? "Confirmada" : "Esperando respuesta"}
-                      </Etiqueta>
-                    )}
+                    {a.estado === "confirmada" && <Etiqueta tono="verde">Confirmada</Etiqueta>}
+                    {a.estado === "pendiente" && <Etiqueta tono="ambar">Esperando respuesta</Etiqueta>}
                     <span className="ml-auto text-lg font-bold">{formatearEuros(gasto)}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -182,12 +179,12 @@ export default async function PaginaReparto({ params, searchParams }: PageProps<
                     const texto = `${l.nombre} (${l.unidad})`;
                     return (
                       <li key={`${l.alimento_id}|${l.unidad}`} className="px-4 py-2">
-                        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                          <span>
+                        <div className="flex items-baseline justify-between gap-x-3">
+                          <span className="min-w-0">
                             <strong>{l.cantidad} ×</strong> {l.nombre}{" "}
                             <span className="text-sm text-stone-600">({l.unidad})</span>
                           </span>
-                          <span className="tabular-nums">{formatearEuros(l.gasto)}</span>
+                          <span className="shrink-0 tabular-nums">{formatearEuros(l.gasto)}</span>
                         </div>
                         {editable && otros.length > 0 && (
                           <details className="text-sm">

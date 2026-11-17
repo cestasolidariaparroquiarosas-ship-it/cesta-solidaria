@@ -69,7 +69,7 @@ export default async function PaginaAlimentos({ searchParams }: PageProps<"/alim
             <span className="w-1/5">Precio aprox.</span>
             <span className="w-2/5">Contiene</span>
           </CabeceraColumnas>
-        <ul className={LISTA}>
+          <ul className={LISTA}>
             {alimentos.valor.map((a) => {
               const contiene = textoContiene(a.etiquetas.map((id) => nombreEtiqueta.get(id) ?? "?"));
               return (
@@ -79,7 +79,7 @@ export default async function PaginaAlimentos({ searchParams }: PageProps<"/alim
                     className="flex flex-col gap-1 px-4 py-3 hover:bg-emerald-50 sm:flex-row sm:items-center sm:gap-4"
                   >
                     <span className="min-w-0 sm:w-2/5">
-                      <span className="block truncate font-medium">
+                      <span className="block truncate font-semibold">
                         {a.nombre}
                         {!a.activo && (
                           <span className="ml-2">
@@ -89,8 +89,14 @@ export default async function PaginaAlimentos({ searchParams }: PageProps<"/alim
                       </span>
                       <span className="block truncate text-sm text-stone-600">{a.unidad}</span>
                     </span>
-                    <span className="text-sm sm:w-1/5">{formatearEuros(a.precio_aprox)}</span>
-                    <span className="text-sm text-stone-600 sm:w-2/5">{contiene}</span>
+                    <span className="font-semibold tabular-nums sm:w-1/5">{formatearEuros(a.precio_aprox)}</span>
+                    <span className="sm:w-2/5">
+                      {contiene && (
+                        <span className="inline-block rounded-full bg-orange-100 px-2.5 py-0.5 text-[13px] font-semibold text-orange-900">
+                          {contiene}
+                        </span>
+                      )}
+                    </span>
                   </Link>
                 </li>
               );

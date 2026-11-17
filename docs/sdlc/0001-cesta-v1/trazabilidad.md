@@ -44,7 +44,6 @@ Para cada CA del spec: dónde se comprueba. Las pruebas nombran el CA en su tít
 | CA-33 | Republicar una etiqueta anterior | O el 2026-11-15, tras publicar la 1.0.0, se republicó `v0.8.0` a mano (deploy → Run workflow): checkout de la etiqueta, primero en pruebas y después en producción, sin tocar las migraciones. Después se volvió a la `v1.0.0` igual. Pruebas en los comentarios del PR #11 |
 | CA-34 | Copia diaria cifrada y restauración comprobada | O repositorio privado `cesta-copias`, workflow `copia`: cada ejecución restaura la copia cifrada en un Supabase desechable y compara las filas de cada tabla (ver la nota) |
 
-
 ## Iteración 0003: presentación
 
 | CA | Qué | Dónde se prueba |

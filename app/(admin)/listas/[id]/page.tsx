@@ -14,6 +14,7 @@ import {
 import { BotonLista, FilaItem, FormularioAnadir, FormularioEliminarLista, FormularioNombreLista } from "../formularios";
 import { Aviso, Volver } from "../../_ui/aviso";
 import { Etiqueta } from "../../_ui/etiqueta";
+import { Tarjeta } from "../../_ui/tarjeta";
 
 export const metadata: Metadata = { title: "Lista base · Cesta solidaria" };
 
@@ -53,62 +54,53 @@ export default async function PaginaLista({ params, searchParams }: PageProps<"/
       </div>
       <Aviso clave={aviso} textos={AVISOS} />
 
-      <section className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
-        <h2 className="border-b border-stone-300 bg-stone-100 px-4 py-3 text-lg font-bold">Alimentos y cantidades al mes</h2>
-        <div className="flex flex-col gap-3 p-4">
-          <p className="text-sm text-stone-600">
-            La cesta de una familia lleva, de cada alimento, adultos × cantidad por adulto + niños ×
-            cantidad por niño, redondeado hacia arriba. Se aceptan decimales: 0,5 por adulto son 2
-            unidades para 3 adultos.
-          </p>
-          {l.items.length === 0 ? (
-            <p className="text-sm text-stone-600">Todavía no tiene alimentos.</p>
-          ) : (
-            <ul className="-mx-4 flex flex-col divide-y divide-stone-200 border-y border-stone-200">
-              {l.items.map((item) => (
-                <FilaItem
-                  key={`${item.id}|${item.cantidad_por_adulto}|${item.cantidad_por_nino}`}
-                  item={item}
-                  guardar={cambiarCantidadesAccion.bind(null, l.id, item.id)}
-                  quitar={quitarAlimentoAccion.bind(null, l.id, item.id)}
-                />
-              ))}
-            </ul>
-          )}
-          <h3 className="mt-2 font-medium">Añadir un alimento</h3>
-          <FormularioAnadir
-            key={l.items.length}
-            accion={anadirAlimentoAccion.bind(null, l.id)}
-            alimentos={disponibles.map((a) => ({ id: a.id, nombre: a.nombre, unidad: a.unidad }))}
-          />
-        </div>
-      </section>
+      <Tarjeta titulo="Alimentos y cantidades al mes">
+        <p className="text-sm text-stone-600">
+          La cesta de una familia lleva, de cada alimento, adultos × cantidad por adulto + niños ×
+          cantidad por niño, redondeado hacia arriba. Se aceptan decimales: 0,5 por adulto son 2
+          unidades para 3 adultos.
+        </p>
+        {l.items.length === 0 ? (
+          <p className="text-sm text-stone-600">Todavía no tiene alimentos.</p>
+        ) : (
+          <ul className="-mx-4 flex flex-col divide-y divide-stone-200 border-y border-stone-200">
+            {l.items.map((item) => (
+              <FilaItem
+                key={`${item.id}|${item.cantidad_por_adulto}|${item.cantidad_por_nino}`}
+                item={item}
+                guardar={cambiarCantidadesAccion.bind(null, l.id, item.id)}
+                quitar={quitarAlimentoAccion.bind(null, l.id, item.id)}
+              />
+            ))}
+          </ul>
+        )}
+        <h3 className="mt-2 font-medium">Añadir un alimento</h3>
+        <FormularioAnadir
+          key={l.items.length}
+          accion={anadirAlimentoAccion.bind(null, l.id)}
+          alimentos={disponibles.map((a) => ({ id: a.id, nombre: a.nombre, unidad: a.unidad }))}
+        />
+      </Tarjeta>
 
-      <section className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
-        <h2 className="border-b border-stone-300 bg-stone-100 px-4 py-3 text-lg font-bold">Ajustes de la lista</h2>
-        <div className="flex flex-col gap-3 p-4">
-          <FormularioNombreLista
-            key={l.nombre}
-            accion={renombrarListaAccion.bind(null, l.id)}
-            nombre={l.nombre}
-            etiqueta="Nombre"
-            textoBoton="Guardar nombre"
-          />
-          {!l.predeterminada && (
-            <BotonLista accion={marcarPredeterminadaAccion.bind(null, l.id)} texto="Marcar como predeterminada" />
-          )}
-        </div>
-      </section>
+      <Tarjeta titulo="Ajustes de la lista">
+        <FormularioNombreLista
+          key={l.nombre}
+          accion={renombrarListaAccion.bind(null, l.id)}
+          nombre={l.nombre}
+          etiqueta="Nombre"
+          textoBoton="Guardar nombre"
+        />
+        {!l.predeterminada && (
+          <BotonLista accion={marcarPredeterminadaAccion.bind(null, l.id)} texto="Marcar como predeterminada" />
+        )}
+      </Tarjeta>
 
-      <section className="overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
-        <h2 className="border-b border-stone-300 bg-stone-100 px-4 py-3 text-lg font-bold">Eliminar</h2>
-        <div className="flex flex-col gap-3 p-4">
-          <p className="text-sm text-stone-600">
-            Las cestas que ya se prepararon con esta lista no cambian: conservan sus alimentos.
-          </p>
-          <FormularioEliminarLista accion={eliminarListaAccion.bind(null, l.id)} />
-        </div>
-      </section>
+      <Tarjeta titulo="Eliminar">
+        <p className="text-sm text-stone-600">
+          Las cestas que ya se prepararon con esta lista no cambian: conservan sus alimentos.
+        </p>
+        <FormularioEliminarLista accion={eliminarListaAccion.bind(null, l.id)} />
+      </Tarjeta>
     </div>
   );
 }

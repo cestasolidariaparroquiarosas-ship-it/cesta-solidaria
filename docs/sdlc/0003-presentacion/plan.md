@@ -43,7 +43,7 @@ docs/sdlc/0001-cesta-v1/trazabilidad.md   # CA-0301 a CA-0307
 3. **Pantallas de trabajo:** Inicio, detalle de semana (pasos, seguimiento) y Reparto.
 4. **Resto:** listas, fichas, formularios, acceso y páginas públicas.
 5. **Pruebas e2e:** las nuevas, más los ajustes de CA-0307.
-6. **Capturas:** `capturas.spec.ts` guarda imágenes de las pantallas principales en el informe de Playwright de CI, con los datos que crean las e2e. Claude las descarga del PR (`gh run download`) y las revisa contra la propuesta antes de fusionar. Es la única forma de verlas antes del despliegue, porque en la sesión de Claude no arranca Supabase local.
+6. **Capturas:** `capturas.spec.ts` toma imágenes de las pantallas principales en CI, con los datos de prueba (iteración 0002) recién cargados. Van en el artefacto `capturas` del PR y, en base64, en el registro de CI, de donde Claude las recupera para revisarlas contra la propuesta antes de fusionar. Es la única forma de verlas antes del despliegue, porque en la sesión de Claude no arranca Supabase local (ver spec §8).
 7. Versión 1.2.0, CHANGELOG y trazabilidad. Revisión independiente con las capturas, CI, fusión y despliegue.
 8. **Después del despliegue:** Claude revisa producción (con los datos de prueba) en el navegador, a 1280 y a 375 px, y te pasa unas capturas para enseñarlas a los administradores.
 

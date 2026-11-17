@@ -230,7 +230,10 @@ export default async function PaginaSemana({ params, searchParams }: PageProps<"
         </div>
       )}
 
-      <section id="envio" className="scroll-mt-4 overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm">
+      <section
+        id="envio"
+        className={`scroll-mt-4 overflow-hidden rounded-xl border border-stone-300 bg-white shadow-sm ${compacta ? "" : "max-w-3xl"}`}
+      >
         <Envio semana={s} asignaciones={reparto.valor} />
       </section>
 
